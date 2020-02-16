@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_CLAS" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <VSEOCLASS>
+    <CLSNAME>ZCL_SQL</CLSNAME>
+    <LANGU>E</LANGU>
+    <DESCRIPT>Generic Native SQL implementation</DESCRIPT>
+    <STATE>1</STATE>
+    <CLSCCINCL>X</CLSCCINCL>
+    <FIXPT>X</FIXPT>
+    <UNICODE>X</UNICODE>
+   </VSEOCLASS>
+   <DESCRIPTIONS>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>CLOSE_CONNECTION</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Close DB Connection</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>CONSTRUCTOR</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Dummy CONSTRUCTOR</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>CREATE_DDIC_OBJECT</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Create a DDIC table/struct based on result structure</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>DECODE_AND_EXECUTE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Decode statement type and execute accordingly</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>DISPLAY_MESSAGE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Display message in a popup</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GET_CONNECTION</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Attempt connection to the specified DB</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GET_CONNECTION_PARAMS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Get Connection Name From User</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GET_SQL_STATEMENT</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Prompt User For SQL Statement</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GET_STATEMENT_REF</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Create statement object</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GO_CON</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Database Connection</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GO_SQL_STMT</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>SQL statement</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GV_CON_NAME</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Logical name of a database connection</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>GV_SQL_STMT</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>User SQL Statement</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_SQL</CLSNAME>
+     <CMPNAME>MAIN</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Main Method</DESCRIPT>
+    </SEOCOMPOTX>
+   </DESCRIPTIONS>
+  </asx:values>
+ </asx:abap>
+</abapGit>
