@@ -164,6 +164,8 @@ class lcl_app implementation.
         select source from zsk_t_source into table @data(lt_source) where prog_name eq @report.
         if gt_source <> lt_source.
           go_app->save_before_exit( ).
+        else.
+          leave program.  " IHDK905405
         endif.
       else.
         go_app->save_before_exit( ).
