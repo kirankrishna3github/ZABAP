@@ -30,7 +30,7 @@ selection-screen:
   begin of line,
     pushbutton 2(25) text-dwn user-command dwn modif id dwn,
     position 32.
-    parameters: c_wdata as checkbox modif id dwn.
+parameters: c_wdata as checkbox modif id dwn.
 selection-screen:
     comment 35(40) text-dat modif id dwn,
   end of line.
@@ -250,6 +250,16 @@ class lcl_app implementation.
       endif.
       if lo_struct_descr is bound.
         data(lt_component) = lo_struct_descr->get_components( ).
+        loop at lt_component into data(ls_component) where as_include = abap_true.
+          try.
+              lo_struct_descr ?= ls_component-type.
+              append lines of lo_struct_descr->get_components( ) to lt_component.
+            catch cx_sy_move_cast_error ##no_handler.
+          endtry.
+          clear ls_component.
+        endloop.
+
+        delete lt_component where as_include = abap_true.
       endif.
 
       data: begin of ls_flds,
@@ -260,7 +270,8 @@ class lcl_app implementation.
 
       refresh lt_flds.
       if lt_component is not initial.
-        loop at lt_component into data(ls_component).
+        clear ls_component.
+        loop at lt_component into ls_component.
           clear ls_flds.
           ls_flds-fname = ls_component-name.
           data(lo_elem_descr) = cast cl_abap_elemdescr( ls_component-type ).
