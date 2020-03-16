@@ -1,7 +1,7 @@
 *&---------------------------------------------------------------------*
 *& Report ZSK_PRG_DEMO_ABAP_EDITOR
 *&---------------------------------------------------------------------*
-*&
+*& ZSK_EXECUTE | 6010859; SaurabhK | Monday, March 16, 2020 23:15:50
 *&---------------------------------------------------------------------*
 program zsk_prg_demo_abap_editor.
 
@@ -12,7 +12,10 @@ class lcl_app definition deferred.
 data: go_app type ref to lcl_app.
 
 class lcl_app definition.
+
   public section.
+    interfaces: if_f4callback_value_request.
+
     types: gty_source_line type c length 255.
     data: go_abap_editor  type ref to cl_gui_abapedit, " Explicit declaration to handle non-class based exceptions
           go_abap_display type ref to cl_gui_abapedit, " Explicit declaration to handle non-class based exceptions
@@ -532,7 +535,7 @@ class lcl_app implementation.
       if sy-subrc <> 0.
 * Implement suitable error handling here
       else.
-        if lv_answer ne 1.
+        if lv_answer ne '1'.
           message 'Action cancelled' type 'S'.
         endif.
       endif.
@@ -540,7 +543,7 @@ class lcl_app implementation.
       message |No previous/saved version of program { report } found!| type 'I' display like 'S'.
     endif.
 
-    if lv_answer eq 1 and lv_exists eq abap_true.
+    if lv_answer eq '1' and lv_exists eq abap_true.
       select source from zsk_t_source into table @data(lt_source) where prog_name eq @report.
 
       check lt_source is not initial.
@@ -584,12 +587,20 @@ class lcl_app implementation.
     if sy-subrc <> 0.
 * Implement suitable error handling here
     endif.
-    if lv_answer ne 1.
-      leave program.
-    else.
-      go_app->save_src_to_db( ).
-      leave program.
-    endif.
+    " IHDK905672
+    case lv_answer.
+      when '1'.
+        go_app->save_src_to_db( ).
+        leave program.
+      when '2'.
+        leave program.
+      when 'A'.
+        " do nothing
+    endcase.
+  endmethod.
+
+  method if_f4callback_value_request~f4_call_callback.
+    break-point.
   endmethod.
 endclass.
 
@@ -647,13 +658,28 @@ endmodule.
 module report_f4 input.
   select distinct prog_name from zsk_t_source into table @data(lt_values).
 
+  data lo_f4_callback type ref to if_f4callback_value_request.
+  free lo_f4_callback.
+  lo_f4_callback ?= new lcl_app( ).
+
   call function 'F4IF_INT_TABLE_VALUE_REQUEST'
     exporting
-      retfield    = 'PROG_NAME'
-      dynpprog    = sy-cprog
-      dynpnr      = sy-dynnr
-      dynprofield = 'REPORT'
-      value_org   = 'S'
+      retfield         = 'PROG_NAME'
+      dynpprog         = sy-cprog
+      dynpnr           = sy-dynnr
+      dynprofield      = 'REPORT'
+      value_org        = 'S'
+      callback_program = cl_abap_syst=>get_current_program( )
+      callback_method  = lo_f4_callback
     tables
-      value_tab   = lt_values.
+      value_tab        = lt_values
+      return_tab       =
+    exceptions
+      parameter_error  = 1
+      no_values_found  = 2
+      others           = 3.
+
+  cl_gui_cfw=>flush( ).
+
+  suppress dialog.
 endmodule.
