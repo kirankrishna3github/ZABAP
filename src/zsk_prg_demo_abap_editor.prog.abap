@@ -12,10 +12,7 @@ class lcl_app definition deferred.
 data: go_app type ref to lcl_app.
 
 class lcl_app definition.
-
   public section.
-    interfaces: if_f4callback_value_request.
-
     types: gty_source_line type c length 255.
     data: go_abap_editor  type ref to cl_gui_abapedit, " Explicit declaration to handle non-class based exceptions
           go_abap_display type ref to cl_gui_abapedit, " Explicit declaration to handle non-class based exceptions
@@ -598,10 +595,6 @@ class lcl_app implementation.
         " do nothing
     endcase.
   endmethod.
-
-  method if_f4callback_value_request~f4_call_callback.
-    break-point.
-  endmethod.
 endclass.
 
 start-of-selection.
@@ -658,28 +651,45 @@ endmodule.
 module report_f4 input.
   select distinct prog_name from zsk_t_source into table @data(lt_values).
 
-  data lo_f4_callback type ref to if_f4callback_value_request.
-  free lo_f4_callback.
-  lo_f4_callback ?= new lcl_app( ).
+  data: lt_return type table of ddshretval.
 
   call function 'F4IF_INT_TABLE_VALUE_REQUEST'
     exporting
-      retfield         = 'PROG_NAME'
-      dynpprog         = sy-cprog
-      dynpnr           = sy-dynnr
-      dynprofield      = 'REPORT'
-      value_org        = 'S'
-      callback_program = cl_abap_syst=>get_current_program( )
-      callback_method  = lo_f4_callback
+      retfield        = 'PROG_NAME'
+      dynpprog        = sy-cprog
+      dynpnr          = sy-dynnr
+      dynprofield     = 'REPORT'
+      value_org       = 'S'
     tables
-      value_tab        = lt_values
-      return_tab       =
+      value_tab       = lt_values
+      return_tab      = lt_return
     exceptions
-      parameter_error  = 1
-      no_values_found  = 2
-      others           = 3.
+      parameter_error = 1
+      no_values_found = 2
+      others          = 3.
 
-  cl_gui_cfw=>flush( ).
+  " IHDK905674
+  try.
+      if lt_return[ 1 ]-fieldval <> report.
+        report = lt_return[ 1 ]-fieldval.
 
-  suppress dialog.
+        ok_code = 'LOAD_SRC'.
+
+*        cl_gui_cfw=>set_new_ok_code( exporting new_code = 'LOAD_SRC' importing rc = data(lv_rc) ).
+
+*        call function 'SAPGUI_SET_FUNCTIONCODE'
+*          exporting
+*            functioncode           = 'LOAD_SRC' " Function code
+*          exceptions
+*            function_not_supported = 1   " Not supported on this front end platform
+*            others                 = 2.
+*        if sy-subrc <> 0.
+*          message id sy-msgid type sy-msgty number sy-msgno
+*            with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+*        endif.
+
+        suppress dialog.  " trigger pai
+      endif.
+    catch cx_sy_itab_line_not_found ##no_handler.
+  endtry.
 endmodule.
