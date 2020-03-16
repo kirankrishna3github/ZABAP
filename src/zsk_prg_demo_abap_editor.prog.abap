@@ -484,14 +484,14 @@ class lcl_app implementation.
       if sy-subrc <> 0.
 * Implement suitable error handling here
       endif.
-      if lv_answer ne 1.
+      if lv_answer ne '1'.
         message 'Action cancelled' type 'S'.
       endif.
     else.
-      lv_answer = 1.
+      lv_answer = '1'.
     endif.
 
-    if lv_answer eq 1.
+    if lv_answer eq '1'.
       get_source_code( ).
 
       delete from zsk_t_source where prog_name eq report.
