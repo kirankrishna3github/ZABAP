@@ -191,10 +191,20 @@ class lcl_app implementation.
           check lv_file_path is not initial and sy-subrc = 0.
 
           if c_wdata eq abap_true.
-            try.
-                select * from (p_table) appending corresponding fields of table <gt_excel>.
-              catch cx_sy_dynamic_osql_error into data(lox_dyn_sql).
-            endtry.
+            data: lt type ref to data.
+            field-symbols: <lt> type standard table.
+
+            create data lt type table of (p_table).
+            if lt is bound.
+              assign lt->* to <lt>.
+              if <lt> is assigned.
+                try.
+                    select * from (p_table) into corresponding fields of table <lt>.
+                    <gt_excel> = corresponding #( base ( <gt_excel> ) <lt> ).
+                  catch cx_sy_dynamic_osql_error into data(lox_dyn_sql).
+                endtry.
+              endif.
+            endif.
           endif.
 
           cl_gui_frontend_services=>gui_download(
