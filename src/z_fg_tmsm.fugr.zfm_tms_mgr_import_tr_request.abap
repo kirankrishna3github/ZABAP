@@ -21,6 +21,7 @@ function zfm_tms_mgr_import_tr_request.
       iv_import_again            = 'X'
       iv_ignore_originality      = 'X'
       iv_ignore_repairs          = 'X'
+      iv_ignore_cvers            = 'X'
       iv_test_import             = ''
       it_requests                = it_requests
     exceptions
