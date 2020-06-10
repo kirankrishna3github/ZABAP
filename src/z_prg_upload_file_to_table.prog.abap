@@ -8,6 +8,8 @@ report z_prg_upload_file_to_table.
 *--------------------------------------------------------------------*
 * Global data
 *--------------------------------------------------------------------*
+tables: sscrfields.
+
 data: gv_table type rsrd1-tbma_val.
 field-symbols: <gt_excel> type standard table,
                <gt>       type standard table.
@@ -35,6 +37,8 @@ selection-screen:
     comment 35(40) text-dat modif id dwn,
   end of line.
 selection-screen end of block dwn.
+
+selection-screen function key 1.
 *--------------------------------------------------------------------*
 * local class definitions
 *--------------------------------------------------------------------*
@@ -439,29 +443,13 @@ class lcl_app implementation.
     endif.
     check <gt_excel> is assigned and p_file is not initial and <gt> is assigned.
     refresh: <gt_excel>, <gt>.
-    data: lt_raw type truxs_t_text_data.
-    call function 'TEXT_CONVERT_XLS_TO_SAP'
-      exporting
-        i_field_seperator    = abap_true
-        i_line_header        = abap_false
-        i_tab_raw_data       = lt_raw
-        i_filename           = conv rlgrap-filename( p_file )
-      tables
-        i_tab_converted_data = <gt_excel>
-      exceptions
-        conversion_failed    = 1
-        others               = 2.
-    if sy-subrc <> 0.
-      message id sy-msgid type 'S' number sy-msgno with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 display like 'E'.
-      return.
-    endif.
 
-    check <gt_excel> is not initial.
-    zcl_helper=>check_file_format( changing ctab = <gt_excel> exceptions file_format_altered = 1 others = 2 ).
-    if sy-subrc <> 0.
-      refresh <gt_excel>.
-      return.
-    endif.
+    zcl_helper=>excel_to_itab(
+      exporting
+        iv_file               = conv #( p_file )         " Local file for upload/download
+        iv_check_file_format  = abap_true                " Check file field sequence
+      changing
+        ct_itab               = <gt_excel> ).            " Internal table
 
     check <gt_excel> is not initial.
     if p_table is not initial.
