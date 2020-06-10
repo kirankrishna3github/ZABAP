@@ -284,6 +284,8 @@ class lcl_app implementation.
                exporting
                  iv_filepath = conv #( lv_file_path ) ). " File path to check
 
+            p_file = lv_file_path.
+
             cl_gui_frontend_services=>registry_get_value(
               exporting
                 root      = 0
