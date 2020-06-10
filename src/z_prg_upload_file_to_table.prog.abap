@@ -280,6 +280,41 @@ class lcl_app implementation.
               iv_force_string     = abap_true             " Convert all values to string
               iv_file_path        = lv_file_path ).       " Filepath on frontend or app server to download to...
 
+          if zcl_helper=>check_file_exists(
+               exporting
+                 iv_filepath = conv #( lv_file_path ) ). " File path to check
+
+            cl_gui_frontend_services=>registry_get_value(
+              exporting
+                root      = 0
+                key       = 'HKEY_LOCAL_MACHINE\SOFTWARE\Classes\ExcelWorksheet'
+                value     = 'ExcelWorksheet'
+              importing
+                reg_value = data(lv_excel_executable) ).
+
+            cl_gui_frontend_services=>execute(
+              exporting
+                document               = conv #( lv_file_path )       " Path+Name to Document
+                application            = lv_excel_executable                      " Path and Name of Application
+                maximized              = conv #( abap_true )          " Show Window Maximized
+              exceptions
+                cntl_error             = 1                 " Control error
+                error_no_gui           = 2                 " No GUI available
+                bad_parameter          = 3                 " Incorrect parameter combination
+                file_not_found         = 4                 " File not found
+                path_not_found         = 5                 " Path not found
+                file_extension_unknown = 6                 " Could not find application for specified extension
+                error_execute_failed   = 7                 " Could not execute application or document
+                synchronous_failed     = 8                 " Cannot Call Application Synchronously
+                not_supported_by_gui   = 9                 " GUI does not support this
+                others                 = 10 ).
+
+            if sy-subrc <> 0.
+              message id sy-msgid type sy-msgty number sy-msgno
+                with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+            endif.
+          endif.
+
           refresh <gt_excel>.
           if sy-subrc <> 0.
             message id sy-msgid type 'S' number sy-msgno with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 display like 'E'.
@@ -294,14 +329,14 @@ class lcl_app implementation.
     if sy-ucomm = 'FC01'.
       if <gt> is assigned.
         data(lv_subrc) = value sy-subrc( ).
-        perform xx_check_tcode in program SAPLSD41 using 'SE16' changing lv_subrc.
-          if lv_subrc = 0.
-            call function 'RS_TOOL_ACCESS'
-              exporting
-                operation   = 'TAB_CONT'
-                object_name = conv rsdxx-objname( p_table )
-                object_type = conv rsdxx-trobjtype( 'TABL' ).
-          endif.
+        perform xx_check_tcode in program saplsd41 using 'SE16' changing lv_subrc.
+        if lv_subrc = 0.
+          call function 'RS_TOOL_ACCESS'
+            exporting
+              operation   = 'TAB_CONT'
+              object_name = conv rsdxx-objname( p_table )
+              object_type = conv rsdxx-trobjtype( 'TABL' ).
+        endif.
       endif.
     endif.
   endmethod.
