@@ -202,15 +202,40 @@ class lcl_app implementation.
                     select * from (p_table) into corresponding fields of table <lt>.
                     <gt_excel> = corresponding #( base ( <gt_excel> ) <lt> ).
 
-                    data(lt_component) = cast cl_abap_structdescr(
-                                           cast cl_abap_tabledescr(
-                                             cl_abap_typedescr=>describe_by_data(
-                                               exporting
-                                                 p_data = <lt> ) )->get_table_line_type( ) )
+                    data(lt_component_db) = cast cl_abap_structdescr(
+                                              cast cl_abap_tabledescr(
+                                                cl_abap_typedescr=>describe_by_data(
+                                                  exporting
+                                                    p_data = <lt> ) )->get_table_line_type( ) )->components.
 
-                    LOOP AT <gt_excel> assigning field-symbol(<ls_excel>).
+                    data(lt_component_ex) = cast cl_abap_structdescr(
+                                              cast cl_abap_tabledescr(
+                                                cl_abap_typedescr=>describe_by_data(
+                                                  exporting
+                                                    p_data = <lt> ) )->get_table_line_type( ) )->components.
 
-                    ENDLOOP.
+                    loop at <gt_excel> assigning field-symbol(<ls_excel>) from 2.
+                      loop at lt_component_ex into data(ls_component_ex).
+                        assign component ls_component_ex-name of structure <ls_excel> to field-symbol(<lv_ex>).
+                        try.
+                            data(ls_component_db) = lt_component_db[ name = ls_component_ex-name ].
+                            if ls_component_db-type_kind = cl_abap_typedescr=>typekind_date.
+                              cl_reca_date=>convert_date_to_string(
+                                exporting
+                                  id_date        = conv #( <lv_ex> )       " Date
+                                importing
+                                  ed_date_string = <lv_ex> ). " Date as a String (10 Characters!)
+                            endif.
+                          catch cx_sy_itab_line_not_found ##no_handler.
+                        endtry.
+
+                        clear:
+                          ls_component_ex,
+                          ls_component_db.
+
+                        unassign <lv_ex>.
+                      endloop.
+                    endloop.
                   catch cx_sy_dynamic_osql_error into data(lox_dyn_sql).
                 endtry.
               endif.
