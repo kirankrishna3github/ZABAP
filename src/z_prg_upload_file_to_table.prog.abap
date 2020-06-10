@@ -44,7 +44,15 @@ selection-screen function key 1.
 *--------------------------------------------------------------------*
 class lcl_app definition.
   public section.
-    class-methods: f4_file, screen_modif, input_fld_check, process_ucomm, create_table, build_excel_tab.
+    class-methods:
+      set_sel_screen_functions,
+      f4_file,
+      screen_modif,
+      input_fld_check,
+      process_ucomm,
+      create_table,
+      build_excel_tab.
+
     methods: process.
 
   protected section.
@@ -68,6 +76,16 @@ endclass.
 * local class implementation
 *--------------------------------------------------------------------*
 class lcl_app implementation.
+  method set_sel_screen_functions.
+    if <gt> is assigned.
+      data(ls_functxt) = value smp_dyntxt( icon_id   = icon_list
+                                           quickinfo = 'Display Table Data'
+                                           icon_text = '' ).
+
+      sscrfields-functxt_01 = ls_functxt.  " 01, 02, 03, 04, 05
+    endif.
+  endmethod.
+
   method f4_file.
     data: lv_file_filter type string,
           lt_filein      type filetable,
@@ -271,6 +289,19 @@ class lcl_app implementation.
         else.
           message 'Error generating excel file format' type 'S' display like 'E'.
         endif.
+      endif.
+    endif.
+    if sy-ucomm = 'FC01'.
+      if <gt> is assigned.
+        data(lv_subrc) = value sy-subrc( ).
+        perform xx_check_tcode in program SAPLSD41 using 'SE16' changing lv_subrc.
+          if lv_subrc = 0.
+            call function 'RS_TOOL_ACCESS'
+              exporting
+                operation   = 'TAB_CONT'
+                object_name = conv rsdxx-objname( p_table )
+                object_type = conv rsdxx-trobjtype( 'TABL' ).
+          endif.
       endif.
     endif.
   endmethod.
@@ -493,6 +524,7 @@ initialization.
 * selection screen events
 *--------------------------------------------------------------------*
 at selection-screen output.
+  lcl_app=>set_sel_screen_functions( ).
   lcl_app=>screen_modif( ).
 
 at selection-screen on value-request for p_file.
