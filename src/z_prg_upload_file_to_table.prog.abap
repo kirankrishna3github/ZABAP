@@ -201,43 +201,28 @@ class lcl_app implementation.
                 try.
                     select * from (p_table) into corresponding fields of table <lt>.
                     <gt_excel> = corresponding #( base ( <gt_excel> ) <lt> ).
+
+                    data(lt_component) = cast cl_abap_structdescr(
+                                           cast cl_abap_tabledescr(
+                                             cl_abap_typedescr=>describe_by_data(
+                                               exporting
+                                                 p_data = <lt> ) )->get_table_line_type( ) )
+
+                    LOOP AT <gt_excel> assigning field-symbol(<ls_excel>).
+
+                    ENDLOOP.
                   catch cx_sy_dynamic_osql_error into data(lox_dyn_sql).
                 endtry.
               endif.
             endif.
           endif.
 
-          cl_gui_frontend_services=>gui_download(
+          zcl_helper=>itab_to_excel(
             exporting
-              filename              = lv_file_path
-              write_field_separator = abap_true
-            changing
-              data_tab              = <gt_excel>
-            exceptions
-              file_write_error        = 1
-              no_batch                = 2
-              gui_refuse_filetransfer = 3
-              invalid_type            = 4
-              no_authority            = 5
-              unknown_error           = 6
-              header_not_allowed      = 7
-              separator_not_allowed   = 8
-              filesize_not_allowed    = 9
-              header_too_long         = 10
-              dp_error_create         = 11
-              dp_error_send           = 12
-              dp_error_write          = 13
-              unknown_dp_error        = 14
-              access_denied           = 15
-              dp_out_of_memory        = 16
-              disk_full               = 17
-              dp_timeout              = 18
-              file_not_found          = 19
-              dataprovider_exception  = 20
-              control_flush_error     = 21
-              not_supported_by_gui    = 22
-              error_no_gui            = 23
-              others = 25 ).
+              it_itab             = <gt_excel>            " Single internal table to be converted
+              iv_insert_header    = abap_false            " Add header line
+              iv_force_string     = abap_true             " Convert all values to string
+              iv_file_path        = lv_file_path ).       " Filepath on frontend or app server to download to...
 
           refresh <gt_excel>.
           if sy-subrc <> 0.
