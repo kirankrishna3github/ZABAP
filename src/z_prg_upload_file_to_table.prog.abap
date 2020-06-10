@@ -286,18 +286,9 @@ class lcl_app implementation.
 
             p_file = lv_file_path.
 
-            cl_gui_frontend_services=>registry_get_value(
-              exporting
-                root      = 0
-                key       = 'HKEY_LOCAL_MACHINE\SOFTWARE\Classes\ExcelWorksheet'
-                value     = 'ExcelWorksheet'
-              importing
-                reg_value = data(lv_excel_executable) ).
-
             cl_gui_frontend_services=>execute(
               exporting
                 document               = conv #( lv_file_path )       " Path+Name to Document
-                application            = lv_excel_executable                      " Path and Name of Application
                 maximized              = conv #( abap_true )          " Show Window Maximized
               exceptions
                 cntl_error             = 1                 " Control error
