@@ -220,11 +220,20 @@ class lcl_app implementation.
                         try.
                             data(ls_component_db) = lt_component_db[ name = ls_component_ex-name ].
                             if ls_component_db-type_kind = cl_abap_typedescr=>typekind_date.
-                              cl_reca_date=>convert_date_to_string(
+                              zcl_helper=>conv_exit(
                                 exporting
-                                  id_date        = conv #( <lv_ex> )       " Date
+                                  iv      = conv sy-datum( <lv_ex> )  " Unconverted Input
+                                  iv_mode = 'O' " Mode: I = Input, O = Output
                                 importing
-                                  ed_date_string = <lv_ex> ). " Date as a String (10 Characters!)
+                                  ev      = <lv_ex> ). " Converted Output
+                            endif.
+                            if ls_component_db-type_kind = cl_abap_typedescr=>typekind_time.
+                              zcl_helper=>conv_exit(
+                                exporting
+                                  iv      = conv sy-uzeit( <lv_ex> )  " Unconverted Input
+                                  iv_mode = 'O' " Mode: I = Input, O = Output
+                                importing
+                                  ev      = <lv_ex> ). " Converted Output
                             endif.
                           catch cx_sy_itab_line_not_found ##no_handler.
                         endtry.
