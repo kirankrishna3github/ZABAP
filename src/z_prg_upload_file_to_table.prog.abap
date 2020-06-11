@@ -78,18 +78,18 @@ endclass.
 class lcl_app implementation.
   method set_sel_screen_functions.
 *    if <gt> is assigned.
-      data(ls_functxt) = value smp_dyntxt( icon_id   = icon_list
-                                           quickinfo = 'Display Table Data'
-                                           icon_text = '' ).
+    data(ls_functxt) = value smp_dyntxt( icon_id   = icon_list
+                                         quickinfo = 'Display Table Data'
+                                         icon_text = '' ).
 
-      sscrfields-functxt_01 = ls_functxt.  " 01, 02, 03, 04, 05
+    sscrfields-functxt_01 = ls_functxt.  " 01, 02, 03, 04, 05
 
-      clear ls_functxt.
-      ls_functxt = value smp_dyntxt( icon_id   = icon_delete
-                                     quickinfo = 'Delete Table Data'
-                                     icon_text = '' ).
+    clear ls_functxt.
+    ls_functxt = value smp_dyntxt( icon_id   = icon_delete
+                                   quickinfo = 'Delete Table Data'
+                                   icon_text = '' ).
 
-      sscrfields-functxt_02 = ls_functxt.  " 01, 02, 03, 04, 05
+    sscrfields-functxt_02 = ls_functxt.  " 01, 02, 03, 04, 05
 *    endif.
   endmethod.
 
@@ -387,7 +387,24 @@ class lcl_app implementation.
 
     if sy-ucomm = 'FC02'.
       if <gt> is assigned.
-        delete from (p_table).  " client specified where mandt = sy-mandt.
+        data lv_answer type c length 1.
+        clear lv_answer.
+
+        call function 'POPUP_TO_CONFIRM'
+          exporting
+            titlebar       = 'Content Deletion Warning!'
+            text_question  = |All the data in the table { p_table } will be deleted. Do you wish to proceed?|
+          importing
+            answer         = lv_answer
+          exceptions
+            text_not_found = 1
+            others         = 2.
+        if sy-subrc <> 0.
+        endif.
+
+        if lv_answer = '1'.
+          delete from (p_table).
+        endif.
       endif.
     endif.
   endmethod.
