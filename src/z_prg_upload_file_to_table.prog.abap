@@ -59,6 +59,7 @@ class lcl_app definition.
     " placeholder
 
   private section.
+    class-data: mv_table like p_table.
     methods: read_file_data.
 endclass.
 
@@ -171,6 +172,11 @@ class lcl_app implementation.
       if p_table np 'Y*' and p_table np 'Z*' and p_table ns 'WITS/'. " Allow exalca objects
         message 'Table does not lie in customer namespace' type 'E'.
       endif.
+    endif.
+
+    if mv_table <> p_table.
+      mv_table = p_table.
+      clear p_file.
     endif.
 
     create_table( ).
@@ -387,23 +393,40 @@ class lcl_app implementation.
 
     if sy-ucomm = 'FC02'.
       if <gt> is assigned.
-        data lv_answer type c length 1.
-        clear lv_answer.
 
-        call function 'POPUP_TO_CONFIRM'
-          exporting
-            titlebar       = 'Content Deletion Warning!'
-            text_question  = |All the data in the table { p_table } will be deleted. Do you wish to proceed?|
-          importing
-            answer         = lv_answer
-          exceptions
-            text_not_found = 1
-            others         = 2.
-        if sy-subrc <> 0.
-        endif.
+        data lv_data_exists type abap_bool.
+        clear lv_data_exists.
+        select single @abap_true
+          from (p_table)
+          into @lv_data_exists.
 
-        if lv_answer = '1'.
-          delete from (p_table).
+        if lv_data_exists = abap_true.
+          data lv_answer type c length 1.
+          clear lv_answer.
+
+          call function 'POPUP_TO_CONFIRM'
+            exporting
+              titlebar       = 'Content Deletion Warning!'
+              text_question  = |All the data in the table { p_table } will be deleted. Do you wish to proceed?|
+            importing
+              answer         = lv_answer
+            exceptions
+              text_not_found = 1
+              others         = 2.
+          if sy-subrc <> 0.
+          endif.
+
+          if lv_answer = '1'.
+            delete from (p_table).
+
+            if sy-subrc = 0 or sy-dbcnt > 0.
+              commit work.
+
+              message 'Data deleted successfully.' type 'S'.
+            endif.
+          endif.
+        else.
+          message i718(ad) with p_table.
         endif.
       endif.
     endif.
