@@ -399,17 +399,17 @@ class lcl_app implementation.
         data(lo_struct_descr) = cast cl_abap_structdescr( lo_table_descr->get_table_line_type( ) ).
       endif.
       if lo_struct_descr is bound.
-        data(lt_component) = lo_struct_descr->get_components( ).
-        loop at lt_component into data(ls_component) where as_include = abap_true.
-          try.
-              lo_struct_descr ?= ls_component-type.
-              append lines of lo_struct_descr->get_components( ) to lt_component.
-            catch cx_sy_move_cast_error ##no_handler.
-          endtry.
-          clear ls_component.
-        endloop.
-
-        delete lt_component where as_include = abap_true.
+        data(lt_component) = lo_struct_descr->components.
+*        loop at lt_component into data(ls_component) where as_include = abap_true.
+*          try.
+*              lo_struct_descr ?= ls_component-type.
+*              append lines of lo_struct_descr->get_components( ) to lt_component.
+*            catch cx_sy_move_cast_error ##no_handler.
+*          endtry.
+*          clear ls_component.
+*        endloop.
+*
+*        delete lt_component where as_include = abap_true.
       endif.
 
       data: begin of ls_flds,
@@ -420,15 +420,13 @@ class lcl_app implementation.
 
       refresh lt_flds.
       if lt_component is not initial.
-        clear ls_component.
-        loop at lt_component into ls_component.
+        loop at lt_component into data(ls_component).
           clear ls_flds.
+
           ls_flds-fname = ls_component-name.
-          data(lo_elem_descr) = cast cl_abap_elemdescr( ls_component-type ).
-          if lo_elem_descr is bound.
-            ls_flds-flength = lo_elem_descr->length.
-            append ls_flds to lt_flds.
-          endif.
+          ls_flds-flength = ls_component-length.
+          append ls_flds to lt_flds.
+
           clear ls_component.
         endloop.
       endif.
@@ -451,7 +449,7 @@ class lcl_app implementation.
               assign lo_max->* to <lv_max>.
 
               if <lv_max> is assigned.
-                data: lt_comp_create like lt_component.
+                data: lt_comp_create type cl_abap_structdescr=>component_table.
                 refresh lt_comp_create.
                 clear ls_component.
                 loop at lt_component into ls_component.
