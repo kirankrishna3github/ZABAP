@@ -435,7 +435,9 @@ class lcl_app implementation.
         sort lt_flds descending by flength.
         try.
             try.
-                data(lo_max_elem) = cl_abap_elemdescr=>get_c( exporting p_length = lt_flds[ 1 ]-flength ). " field with max length
+                data(lo_max_elem) = cl_abap_elemdescr=>get_c( exporting p_length = cond #( when lt_flds[ 1 ]-flength >= 32
+                                                                                           then lt_flds[ 1 ]-flength
+                                                                                           else 32 ) ). " field with max length
               catch cx_parameter_invalid_range.
             endtry.
 
