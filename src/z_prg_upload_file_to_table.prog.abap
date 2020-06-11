@@ -387,7 +387,7 @@ class lcl_app implementation.
 
     if sy-ucomm = 'FC02'.
       if <gt> is assigned.
-        delete from (p_table) client specified where mandt = sy-mandt.
+        delete from (p_table).  " client specified where mandt = sy-mandt.
       endif.
     endif.
   endmethod.
