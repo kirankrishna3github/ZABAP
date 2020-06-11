@@ -77,7 +77,7 @@ endclass.
 *--------------------------------------------------------------------*
 class lcl_app implementation.
   method set_sel_screen_functions.
-    if <gt> is assigned.
+*    if <gt> is assigned.
       data(ls_functxt) = value smp_dyntxt( icon_id   = icon_list
                                            quickinfo = 'Display Table Data'
                                            icon_text = '' ).
@@ -90,7 +90,7 @@ class lcl_app implementation.
                                      icon_text = '' ).
 
       sscrfields-functxt_02 = ls_functxt.  " 01, 02, 03, 04, 05
-    endif.
+*    endif.
   endmethod.
 
   method f4_file.
@@ -435,9 +435,13 @@ class lcl_app implementation.
         sort lt_flds descending by flength.
         try.
             try.
-                data(lo_max_elem) = cl_abap_elemdescr=>get_c( exporting p_length = cond #( when lt_flds[ 1 ]-flength >= 32
-                                                                                           then lt_flds[ 1 ]-flength
-                                                                                           else 32 ) ). " field with max length
+                if line_exists( lt_component[ type_kind = cl_abap_typedescr=>typekind_string ] ).
+                  data(lo_max_elem) = cl_abap_elemdescr=>get_string( ).
+                else.
+                  lo_max_elem = cl_abap_elemdescr=>get_c( exporting p_length = cond #( when lt_flds[ 1 ]-flength >= 50
+                                                                                       then lt_flds[ 1 ]-flength
+                                                                                       else 50 ) ). " field with max length
+                endif.
               catch cx_parameter_invalid_range.
             endtry.
 
@@ -605,12 +609,11 @@ load-of-program.
   " placeholder
 
 initialization.
-  " placeholder
+  lcl_app=>set_sel_screen_functions( ).
 *--------------------------------------------------------------------*
 * selection screen events
 *--------------------------------------------------------------------*
 at selection-screen output.
-  lcl_app=>set_sel_screen_functions( ).
   lcl_app=>screen_modif( ).
 
 at selection-screen on value-request for p_file.
@@ -628,3 +631,4 @@ start-of-selection.
 * end-of-selection
 *--------------------------------------------------------------------*
 end-of-selection.
+  lcl_app=>set_sel_screen_functions( ).
