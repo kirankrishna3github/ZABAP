@@ -111,33 +111,23 @@
        <LINE>process before output.</LINE>
       </RPY_DYFLOW>
       <RPY_DYFLOW>
-       <LINE>module pbo.</LINE>
+       <LINE>  module pbo.</LINE>
       </RPY_DYFLOW>
       <RPY_DYFLOW/>
       <RPY_DYFLOW>
        <LINE>process after input.</LINE>
       </RPY_DYFLOW>
       <RPY_DYFLOW>
-       <LINE>module pai.</LINE>
+       <LINE>  module pai.</LINE>
       </RPY_DYFLOW>
       <RPY_DYFLOW/>
       <RPY_DYFLOW>
        <LINE>process on value-request.</LINE>
       </RPY_DYFLOW>
       <RPY_DYFLOW>
-       <LINE>field report module report_f4.</LINE>
+       <LINE>  field report module report_f4.</LINE>
       </RPY_DYFLOW>
      </FLOW_LOGIC>
-     <SPACES>
-      <item>0</item>
-      <item>2</item>
-      <item>0</item>
-      <item>0</item>
-      <item>2</item>
-      <item>0</item>
-      <item>0</item>
-      <item>2</item>
-     </SPACES>
     </item>
    </DYNPROS>
    <CUA>

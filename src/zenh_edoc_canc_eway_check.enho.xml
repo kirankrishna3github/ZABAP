@@ -24,13 +24,13 @@
       <item/>
       <item>IF iv_action EQ &apos;CANCEL&apos; AND mo_edocument-&gt;ms_edocument-source_type EQ &apos;SD_INVOICE&apos;.</item>
       <item>SELECT SINGLE * FROM zsd_e_way_bill</item>
-      <item>INTO wa_eway</item>
-      <item>WHERE vbeln_inv EQ mo_edocument-&gt;ms_edocument-source_key.</item>
+      <item>                INTO wa_eway</item>
+      <item>                WHERE vbeln_inv EQ mo_edocument-&gt;ms_edocument-source_key.</item>
       <item>IF sy-subrc = 0.</item>
       <item/>
-      <item>if wa_eway-ewb_no IS NOT INITIAL.</item>
-      <item>MESSAGE E001(00) WITH &apos;E-way bill not cancelled&apos;.</item>
-      <item>ENDIF.</item>
+      <item>  if wa_eway-ewb_no IS NOT INITIAL.</item>
+      <item>    MESSAGE E001(00) WITH &apos;E-way bill not cancelled&apos;.</item>
+      <item>  ENDIF.</item>
       <item>ENDIF.</item>
       <item>ENDIF.</item>
       <item>*---------------EOC CAZ&gt;Onkar on 01.07.19 edoc should not get cancelled if eway bill not cancelled---------</item>
@@ -38,30 +38,36 @@
      </SOURCE>
     </ENH_HOOK_IMPL>
    </ENHANCEMENTS>
-   <SPACES>
+   <SOTR>
     <item>
-     <FULL_NAME>\TY:CL_EDOC_PROCESS\ME:EXECUTE_ACTION\SE:BEGIN\EI</FULL_NAME>
-     <SPACES>
-      <item>0</item>
-      <item>0</item>
-      <item>0</item>
-      <item>0</item>
-      <item>0</item>
-      <item>0</item>
-      <item>16</item>
-      <item>16</item>
-      <item>0</item>
-      <item>0</item>
-      <item>2</item>
-      <item>4</item>
-      <item>2</item>
-      <item>0</item>
-      <item>0</item>
-      <item>0</item>
-      <item>0</item>
-     </SPACES>
+     <HEADER>
+      <CONCEPT>0050569B796C1ED9A6F832BA0522BAEE</CONCEPT>
+      <CREA_LAN>E</CREA_LAN>
+      <TRALA_TYPE>1</TRALA_TYPE>
+      <OBJID_VEC>AAI=</OBJID_VEC>
+     </HEADER>
+     <ENTRIES>
+      <SOTR_TEXT>
+       <CONCEPT>0050569B796C1ED9A6F832BA0522BAEE</CONCEPT>
+       <LANGU>E</LANGU>
+       <LFD_NUM>0001</LFD_NUM>
+       <FLAG_CNTXT>X</FLAG_CNTXT>
+       <STATUS>R</STATUS>
+       <LENGTH>071</LENGTH>
+       <TEXT>Eway cancellation check while edoc cancellation</TEXT>
+      </SOTR_TEXT>
+     </ENTRIES>
     </item>
-   </SPACES>
+   </SOTR>
+   <SOTR_USE>
+    <SOTR_USE>
+     <PGMID>R3TR</PGMID>
+     <OBJECT>ENHO</OBJECT>
+     <OBJ_NAME>ZENH_EDOC_CANC_EWAY_CHECK</OBJ_NAME>
+     <CONCEPT>0050569B796C1ED9A6F832BA0522BAEE</CONCEPT>
+     <LFD_NUM>0001</LFD_NUM>
+    </SOTR_USE>
+   </SOTR_USE>
   </asx:values>
  </asx:abap>
 </abapGit>
