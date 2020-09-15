@@ -33,6 +33,7 @@ TYPES : BEGIN OF ty_final,
           empno(10)  TYPE c,
           tripno(15) TYPE c,
           result(4)  TYPE c,
+          ename TYPE pa0001-ename,
         END OF ty_final.
 "-----------DECLRATION OF INTERNAL TABLE & WORK AREA-----------
 
@@ -95,8 +96,8 @@ FORM get_data .
     FROM swwwihead
     CLIENT SPECIFIED
     INTO TABLE it_swihead
-*    WHERE wi_cd = s_cd.
-   WHERE top_task = 'WS90000009'.
+*    WHERE wi_cd = s_cd
+    WHERE top_task = 'WS90000009'.
 
 
   DATA: lv_wid_read     TYPE sww_wiid.
@@ -109,6 +110,8 @@ FORM get_data .
 *Where date = s_date.                                      " As per selection criteria
 
   LOOP AT it_swihead INTO wa_swihead.
+
+  if wa_swihead-wi_aagent CA '0123456789'.
 
     lv_wid_read = wa_swihead-wi_id.
 
@@ -161,6 +164,11 @@ FORM get_data .
       ENDIF.
 
       wa_final-empno = emp_no.
+
+  SELECT SINGLE ename
+    FROM pa0001 INTO wa_final-ename
+     WHERE pernr = wa_final-empno.
+
       wa_final-tripno = trip_no.
       wa_final-result = result.
       wa_final-status = status.
@@ -178,6 +186,11 @@ FORM get_data .
 
     APPEND wa_final TO it_final.
     CLEAR : wa_final,wa_swihead, emp_no,trip_no,result,status.
+
+    ELSE.
+      DELETE it_swihead INDEX 1 .
+
+      ENDIF.
 
   ENDLOOP.
 
@@ -204,6 +217,14 @@ FORM fcat .
   CLEAR wa_fcat .
 
   wa_fcat-col_pos = '2' . "column position
+  wa_fcat-fieldname = 'ENAME' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Emp Name' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+
+  wa_fcat-col_pos = '3' . "column position
   wa_fcat-fieldname = 'TRIPNO' . "column name
   wa_fcat-tabname = 'IT_FINAAL' . "table
   wa_fcat-seltext_m = 'Trip no' . "Column label
@@ -211,12 +232,12 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '3' . "column position
-  wa_fcat-fieldname = 'RESULT' . "column name
-  wa_fcat-tabname = 'IT_FINAL' . "table
-  wa_fcat-seltext_m = 'Result' . "Column label
-  APPEND wa_fcat TO it_fcat . "append to fcat
-  CLEAR wa_fcat .
+*  wa_fcat-col_pos = '3' . "column position
+*  wa_fcat-fieldname = 'RESULT' . "column name
+*  wa_fcat-tabname = 'IT_FINAL' . "table
+*  wa_fcat-seltext_m = 'Result' . "Column label
+*  APPEND wa_fcat TO it_fcat . "append to fcat
+*  CLEAR wa_fcat .
 
   wa_fcat-col_pos = '4' . "column position
   wa_fcat-fieldname = 'STATUS' . "column name
