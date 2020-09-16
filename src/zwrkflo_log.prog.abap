@@ -28,7 +28,7 @@ TYPES: BEGIN OF ts_swwwihead,
          wi_ct     TYPE swwwihead-wi_ct,
          wi_aed    TYPE swwwihead-wi_aed,
          wi_aagent TYPE swwwihead-wi_aagent,
-         wi_cruser TYPE swwwihead-wi_cruser,
+         wi_cruser TYPE pa0001-pernr,
          top_wi_id TYPE swwwihead-top_wi_id,    "top level workflow
          top_task  TYPE swwwihead-top_task,
        END OF ts_swwwihead.
@@ -36,11 +36,11 @@ TYPES: BEGIN OF ts_swwwihead,
 
 
 TYPES: BEGIN OF ts_ptrv_head,
-         pernr TYPE ptrv_head-pernr,
-         reinr TYPE ptrv_head-reinr,
-         dates TYPE ptrv_head-dates,
-         datv1 TYPE ptrv_head-datv1,
-         uhrv1 TYPE ptrv_head-uhrv1,
+         pernr TYPE pa0001-pernr,
+*         reinr TYPE ptrv_head-reinr,
+*         dates TYPE ptrv_head-dates,
+*         datv1 TYPE ptrv_head-datv1,
+*         uhrv1 TYPE ptrv_head-uhrv1,
 *         sum_reimbu TYPE ptrv_head-sum_reimbu,
          sname TYPE pa0001-sname,
          kostl TYPE pa0001-kostl,
@@ -68,6 +68,9 @@ DATA: it_swihead TYPE TABLE OF ts_swwwihead,
 DATA: it_ptrv TYPE TABLE OF ts_ptrv_head,
       wa_ptrv TYPE ts_ptrv_head.
 
+DATA: it_pa0001 TYPE TABLE OF ts_ptrv_head,
+      wa_pa0001 TYPE ts_ptrv_head.
+
 DATA: it_hrp1000 TYPE TABLE OF ts_hrp1000,
       wa_hrp1000 TYPE ts_hrp1000.
 
@@ -76,7 +79,7 @@ DATA: it_ptrv_shdr TYPE TABLE OF ts_ptrv_shdr,
 
 TYPES : BEGIN OF ts_final,
           wi_id      TYPE swwwihead-wi_id,
-         wi_text   TYPE swwwihead-wi_text,
+          wi_text    TYPE swwwihead-wi_text,
           wi_rhtext  TYPE swwwihead-wi_rhtext,
           wi_stat    TYPE swwwihead-wi_stat,
           wi_cd      TYPE swwwihead-wi_cd,
@@ -102,8 +105,8 @@ TYPES : BEGIN OF ts_final,
           orgeh      TYPE pa0001-orgeh,
           mc_seark   TYPE hrp1000-mc_seark,   " Deparment
           ktext      TYPE cskt-ktext,
-          wi_agname TYPE pa0001-ename,
-          wi_crname TYPE pa0001-ename,
+          wi_agname  TYPE pa0001-ename,
+          wi_crname  TYPE pa0001-ename,
         END OF ts_final.
 
 DATA: it_final TYPE TABLE OF ts_final,
@@ -155,46 +158,6 @@ START-OF-SELECTION.
 *&---------------------------------------------------------------------*
 FORM get_data .
 
-*  SELECT
-*    a~pernr
-*    a~reinr
-*    a~dates
-*    a~datv1
-*    a~uhrv1
-*    b~sname
-*    b~kostl
-*    b~orgeh
-*    FROM ptrv_head AS a
-*    INNER JOIN pa0001 AS b
-*    ON a~pernr EQ b~pernr
-*    INTO TABLE it_ptrv
-*    WHERE a~pernr = s_pernr
-*    AND a~datv1 = s_datv1
-*    AND reinr = s_reinr.
-
-*  IF it_ptrv[] IS NOT INITIAL.
-*
-*    SELECT
-*      otype
-*      objid
-*      mc_seark
-*      FROM hrp1000
-*      INTO TABLE it_hrp1000
-*      FOR ALL ENTRIES IN it_ptrv
-*      WHERE objid = it_ptrv-orgeh
-*      AND otype = 'O'.
-*
-*    SELECT
-*      pernr
-*      reinr
-*      sum_reimbu
-*      FROM ptrv_shdr
-*      INTO TABLE it_ptrv_shdr
-*      FOR ALL ENTRIES IN it_ptrv
-*      WHERE pernr = it_ptrv-pernr
-*      AND reinr = it_ptrv-reinr.
-*
-*  ENDIF.
 
   SELECT
     wi_cd
@@ -206,27 +169,69 @@ FORM get_data .
     AND top_wi_id IN s_top
     AND wi_type = 'F'.
 
-  SELECT               "CI_NOFIELD
-    wi_id
-    wi_type
-    wi_text
-    wi_rhtext
-    wi_stat
-    wi_cd
-    wi_ct
-    wi_aed
-    wi_aagent
-    wi_cruser
-    top_wi_id
-    top_task
-    FROM swwwihead
-    INTO TABLE it_swihead
-    FOR ALL ENTRIES IN it_top
+  IF  it_top[] IS NOT INITIAL.
+
+    SELECT               "CI_NOFIELD
+      wi_id
+      wi_type
+      wi_text
+      wi_rhtext
+      wi_stat
+      wi_cd
+      wi_ct
+      wi_aed
+      wi_aagent
+      wi_cruser
+      top_wi_id
+      top_task
+      FROM swwwihead
+      INTO TABLE it_swihead
+      FOR ALL ENTRIES IN it_top
 *    WHERE wi_cd = s_cd
-    WHERE top_wi_id = it_top-top_wi_id
-    AND wi_type = 'W'.
+      WHERE top_wi_id = it_top-top_wi_id
+      AND wi_type = 'W'.
+
+    IF it_swihead[] IS NOT INITIAL.
+
+      SELECT
+         pernr
+         sname
+         kostl
+         orgeh
+        FROM pa0001
+        INTO TABLE it_pa0001
+        FOR ALL ENTRIES IN it_swihead
+        WHERE pernr = it_swihead-wi_cruser.
+    ENDIF.
+
+    IF it_pa0001[] IS NOT INITIAL.
+
+      SELECT
+       otype
+       objid
+       mc_seark
+       FROM hrp1000
+       INTO TABLE it_hrp1000
+       FOR ALL ENTRIES IN it_pa0001
+       WHERE objid = it_pa0001-orgeh
+       AND otype = 'O'.
+
+*       SELECT
+*      pernr
+*      reinr
+*      sum_reimbu
+*      FROM ptrv_shdr
+*      INTO TABLE it_ptrv_shdr
+*      FOR ALL ENTRIES IN it_pa0001
+*      WHERE pernr = it_pa0001-pernr
+*      AND reinr = it_pa0001-reinr.
+**
 
 
+    ENDIF.
+
+
+  ENDIF.
 
 
   DATA: lv_wid_read     TYPE sww_wiid.
@@ -316,13 +321,31 @@ FORM get_data .
       wa_final-top_task  = wa_swihead-top_task.
       wa_final-top_wi_id = wa_swihead-top_wi_id.
 
+      READ TABLE it_pa0001 INTO wa_pa0001 WITH KEY pernr = wa_final-wi_cruser.
+      IF  sy-subrc = 0.
+
+        wa_final-sname = wa_pa0001-sname.
+        wa_final-kostl = wa_pa0001-kostl.  "cc code
+        wa_final-orgeh = wa_pa0001-orgeh.
+      ENDIF.
+
+      READ TABLE it_hrp1000 INTO wa_hrp1000 WITH KEY objid = wa_final-orgeh
+                                                      otype = 'O'.
+      IF sy-subrc = 0.
+        wa_final-mc_seark = wa_hrp1000-mc_seark.
+      ENDIF.
+
+      SELECT SINGLE ktext FROM cskt
+        INTO wa_final-ktext
+         WHERE kostl = wa_final-kostl.
+
       SELECT SINGLE ename
         FROM pa0001 INTO wa_final-wi_agname
         WHERE pernr = wa_final-wi_aagent.
 
-       SELECT SINGLE ename
-         FROM pa0001 INTO wa_final-wi_crname
-         WHERE pernr = wa_final-wi_cruser.
+      SELECT SINGLE ename
+        FROM pa0001 INTO wa_final-wi_crname
+        WHERE pernr = wa_final-wi_cruser.
 
       APPEND wa_final TO it_final.
       CLEAR : wa_final,wa_swihead, emp_no,trip_no,result,status.
@@ -387,14 +410,14 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-    wa_fcat-col_pos = '5' . "column position
+  wa_fcat-col_pos = '5' . "column position
   wa_fcat-fieldname = 'WI_CRUSER' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creator' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-    wa_fcat-col_pos = '6' . "column position
+  wa_fcat-col_pos = '6' . "column position
   wa_fcat-fieldname = 'WI_CRNAME' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creator Name' . "Column label
@@ -402,7 +425,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-    wa_fcat-col_pos = '7' . "column position
+  wa_fcat-col_pos = '7' . "column position
   wa_fcat-fieldname = 'WI_AAGENT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approver' . "Column label
@@ -410,7 +433,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-   wa_fcat-col_pos = '8' . "column position
+  wa_fcat-col_pos = '8' . "column position
   wa_fcat-fieldname = 'WI_AGNAME' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approver Name' . "Column label
@@ -418,7 +441,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-    wa_fcat-col_pos = '9' . "column position
+  wa_fcat-col_pos = '9' . "column position
   wa_fcat-fieldname = 'STATUS' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval Status' . "Column label
@@ -432,7 +455,7 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-    wa_fcat-col_pos = '11' . "column position
+  wa_fcat-col_pos = '11' . "column position
   wa_fcat-fieldname = 'WI_TEXT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Work Item text' . "Column label
@@ -469,6 +492,26 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
+  wa_fcat-col_pos = '16' . "column position
+  wa_fcat-fieldname = 'KOSTL' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'CC Code' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+  wa_fcat-col_pos = '17' . "column position
+  wa_fcat-fieldname = 'KTEXT' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'CC Name' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+  wa_fcat-col_pos = '18' . "column position
+  wa_fcat-fieldname = 'MC_SEARK' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Deparment' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
 
 
 
