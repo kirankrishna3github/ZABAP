@@ -11,12 +11,14 @@ TABLES: swwwihead.
 
 TYPES: BEGIN OF ts_swwwihead,
          wi_id     TYPE swwwihead-wi_id,
+         wi_type   TYPE swwwihead-wi_type,      "type
          wi_rhtext TYPE swwwihead-wi_rhtext,
          wi_stat   TYPE swwwihead-wi_stat,
          wi_cd     TYPE swwwihead-wi_cd,
          wi_ct     TYPE swwwihead-wi_ct,
          wi_aed    TYPE swwwihead-wi_aed,
          wi_aagent TYPE swwwihead-wi_aagent,
+         TOP_WI_ID TYPE swwwihead-top_wi_id,    "top level workflow
          top_task  TYPE swwwihead-top_task,
        END OF ts_swwwihead.
 
@@ -63,7 +65,8 @@ INITIALIZATION.
   "-----------------select option-------------------------
 
   SELECTION-SCREEN: BEGIN OF BLOCK b1.
-  SELECT-OPTIONS : s_cd FOR swwwihead-wi_cd.
+  SELECT-OPTIONS :" s_cd FOR swwwihead-wi_cd,
+                   s_top FOR swwwihead-top_wi_id.
   SELECTION-SCREEN: END OF BLOCK b1.
 
 
@@ -86,18 +89,22 @@ FORM get_data .
 
   SELECT               "CI_NOFIELD
     wi_id
+    wi_type
     wi_rhtext
     wi_stat
     wi_cd
     wi_ct
     wi_aed
     wi_aagent
+    top_wi_id
     top_task
     FROM swwwihead
     CLIENT SPECIFIED
     INTO TABLE it_swihead
 *    WHERE wi_cd = s_cd
-    WHERE top_task = 'WS90000009'.
+    WHERE top_wi_id = s_top
+    and top_task = 'WS90000009'
+    and wi_type = 'W'.
 
 
   DATA: lv_wid_read     TYPE sww_wiid.
