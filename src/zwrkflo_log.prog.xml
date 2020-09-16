@@ -17,21 +17,21 @@
     </item>
     <item>
      <ID>S</ID>
-     <KEY>S_DATV1</KEY>
-     <ENTRY>Date</ENTRY>
-     <LENGTH>12</LENGTH>
+     <KEY>S_CD</KEY>
+     <ENTRY>Creation Date.</ENTRY>
+     <LENGTH>22</LENGTH>
     </item>
     <item>
      <ID>S</ID>
-     <KEY>S_PERNR</KEY>
+     <KEY>S_CRUSER</KEY>
      <ENTRY>Employee Code</ENTRY>
      <LENGTH>21</LENGTH>
     </item>
     <item>
      <ID>S</ID>
-     <KEY>S_REINR</KEY>
-     <ENTRY>Trip no.</ENTRY>
-     <LENGTH>16</LENGTH>
+     <KEY>S_TOP</KEY>
+     <ENTRY>Parent ID</ENTRY>
+     <LENGTH>17</LENGTH>
     </item>
    </TPOOL>
   </asx:values>
