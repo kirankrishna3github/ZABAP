@@ -28,7 +28,7 @@ TYPES: BEGIN OF ts_swwwihead,
          wi_ct     TYPE swwwihead-wi_ct,
          wi_aed    TYPE swwwihead-wi_aed,
          wi_aagent TYPE swwwihead-wi_aagent,
-         wi_cruser TYPE pa0001-pernr,
+         wi_cruser TYPE swwwihead-wi_cruser,
          top_wi_id TYPE swwwihead-top_wi_id,    "top level workflow
          top_task  TYPE swwwihead-top_task,
        END OF ts_swwwihead.
@@ -193,28 +193,28 @@ FORM get_data .
 
     IF it_swihead[] IS NOT INITIAL.
 
-      SELECT
-         pernr
-         sname
-         kostl
-         orgeh
-        FROM pa0001
-        INTO TABLE it_pa0001
-        FOR ALL ENTRIES IN it_swihead
-        WHERE pernr = it_swihead-wi_cruser.
+*      SELECT
+*         pernr
+*         sname
+*         kostl
+*         orgeh
+*        FROM pa0001
+*        INTO TABLE it_pa0001
+*        FOR ALL ENTRIES IN it_swihead
+*        WHERE pernr = it_swihead-wi_cruser.
     ENDIF.
 
-    IF it_pa0001[] IS NOT INITIAL.
-
-      SELECT
-       otype
-       objid
-       mc_seark
-       FROM hrp1000
-       INTO TABLE it_hrp1000
-       FOR ALL ENTRIES IN it_pa0001
-       WHERE objid = it_pa0001-orgeh
-       AND otype = 'O'.
+*    IF it_pa0001[] IS NOT INITIAL.
+*
+*      SELECT
+*       otype
+*       objid
+*       mc_seark
+*       FROM hrp1000
+*       INTO TABLE it_hrp1000
+*       FOR ALL ENTRIES IN it_pa0001
+*       WHERE objid = it_pa0001-orgeh
+*       AND otype = 'O'.
 
 *       SELECT
 *      pernr
@@ -228,7 +228,7 @@ FORM get_data .
 **
 
 
-    ENDIF.
+*    ENDIF.
 
 
   ENDIF.
@@ -321,23 +321,23 @@ FORM get_data .
       wa_final-top_task  = wa_swihead-top_task.
       wa_final-top_wi_id = wa_swihead-top_wi_id.
 
-      READ TABLE it_pa0001 INTO wa_pa0001 WITH KEY pernr = wa_final-wi_cruser.
-      IF  sy-subrc = 0.
-
-        wa_final-sname = wa_pa0001-sname.
-        wa_final-kostl = wa_pa0001-kostl.  "cc code
-        wa_final-orgeh = wa_pa0001-orgeh.
-      ENDIF.
-
-      READ TABLE it_hrp1000 INTO wa_hrp1000 WITH KEY objid = wa_final-orgeh
-                                                      otype = 'O'.
-      IF sy-subrc = 0.
-        wa_final-mc_seark = wa_hrp1000-mc_seark.
-      ENDIF.
-
-      SELECT SINGLE ktext FROM cskt
-        INTO wa_final-ktext
-         WHERE kostl = wa_final-kostl.
+*      READ TABLE it_pa0001 INTO wa_pa0001 WITH KEY pernr = wa_final-wi_cruser.
+*      IF  sy-subrc = 0.
+*
+*        wa_final-sname = wa_pa0001-sname.
+*        wa_final-kostl = wa_pa0001-kostl.  "cc code
+*        wa_final-orgeh = wa_pa0001-orgeh.
+*      ENDIF.
+*
+*      READ TABLE it_hrp1000 INTO wa_hrp1000 WITH KEY objid = wa_final-orgeh
+*                                                      otype = 'O'.
+*      IF sy-subrc = 0.
+*        wa_final-mc_seark = wa_hrp1000-mc_seark.
+*      ENDIF.
+*
+*      SELECT SINGLE ktext FROM cskt
+*        INTO wa_final-ktext
+*         WHERE kostl = wa_final-kostl.
 
       SELECT SINGLE ename
         FROM pa0001 INTO wa_final-wi_agname
