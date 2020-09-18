@@ -250,8 +250,10 @@ ENDIF.
       FOR ALL ENTRIES IN it_top
 *    WHERE wi_cd = s_cd
       WHERE top_wi_id = it_top-top_wi_id
-      AND wi_type = 'W'
+*      AND wi_type = 'W'
       AND top_task = 'WS90000009'.
+
+
 
     IF it_swihead[] IS NOT INITIAL.
 
@@ -265,6 +267,8 @@ ENDIF.
         FOR ALL ENTRIES IN it_top1
         WHERE pernr = it_top1-wi_cruser1.
     ENDIF.
+
+
 
     IF it_pa0001[] IS NOT INITIAL.
 
@@ -304,7 +308,7 @@ ENDIF.
 *Select * From SWWWIHEAD INTO TABLE lt_swwwihead
 *Where date = s_date.                                      " As per selection criteria
 
-  LOOP AT it_swihead INTO wa_swihead.
+  LOOP AT it_swihead INTO wa_swihead WHERE wi_type = 'W'.
 
     CLEAR: l_it_wi_container[], lv_wid_read,l_wa_wi_header.
 
@@ -343,6 +347,38 @@ ENDIF.
           trip_no = l_wa_wi_container-value.
         ENDIF.
 
+        IF trip_no = ' '.
+
+       lv_wid_read = wa_swihead-wi_id + 1.
+
+      CALL FUNCTION 'SWW_WI_CONTAINER_READ'
+        EXPORTING
+          wi_id                    = lv_wid_read
+        TABLES
+          wi_container             = l_it_wi_container
+        CHANGING
+          wi_header                = l_wa_wi_header
+        EXCEPTIONS
+          container_does_not_exist = 1
+          read_failed              = 2
+          OTHERS                   = 3.
+
+
+      IF sy-subrc = 0.
+        CLEAR: l_wa_wi_container.
+        READ TABLE l_it_wi_container INTO l_wa_wi_container
+        WITH KEY element = 'TRIPNUMBER'.
+        IF sy-subrc = 0.
+          CONDENSE l_wa_wi_container-value.
+          trip_no = l_wa_wi_container-value.
+        ENDIF.
+
+
+        ENDIF.
+
+     endif.
+
+
         CLEAR: l_wa_wi_container.
         READ TABLE l_it_wi_container INTO l_wa_wi_container
         WITH KEY element = '_RESULT'.
@@ -351,21 +387,13 @@ ENDIF.
           result = l_wa_wi_container-value.
         ENDIF.
 
-
-        IF  result = '0001'.
-          status = ' Travel Approved'.
-
-        ELSEIF result = '0002'.
-
-          status = 'Travel Rejected'.
-        ENDIF.
+*        IF  result = '0001'.
+*          status = ' Travel Approved'.*
+*        ELSEIF result = '0002'.
+*          status = 'Travel Rejected'.
+*        ENDIF.
 
         wa_final-empno = emp_no.
-
-*        SELECT SINGLE ename
-*          FROM pa0001 INTO wa_final-ename
-*           WHERE pernr = wa_final-empno.
-
         wa_final-tripno = trip_no.
         wa_final-result = result.
         wa_final-status = status.
