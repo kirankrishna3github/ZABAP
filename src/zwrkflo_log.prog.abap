@@ -358,7 +358,7 @@ ENDIF.
 
     IF trip_no = ' '.
 
-      CLEAR: l_it_wi_container[].
+      CLEAR: l_it_wi_container[],l_wa_wi_container, l_wa_wi_header.
 
        lv_wid_read = wa_swihead-wi_id + 1.
 
@@ -378,7 +378,8 @@ ENDIF.
       IF sy-subrc = 0.
         CLEAR: l_wa_wi_container.
         READ TABLE l_it_wi_container INTO l_wa_wi_container
-        WITH KEY element = 'TRIPNUMBER'.
+        WITH KEY element = 'RESULT'
+                 tab_index = '000007'.
         IF sy-subrc = 0.
           CONDENSE l_wa_wi_container-value.
           trip_no = l_wa_wi_container-value.
@@ -400,7 +401,7 @@ ENDIF.
         wa_final-empno = emp_no.
         wa_final-tripno = trip_no.
         wa_final-result = result.
-        wa_final-status = status.
+*        wa_final-status = status.
 
       ENDIF.
 
@@ -443,6 +444,12 @@ ENDIF.
          wa_final-sum_reimbu = wa_ptrv_shdr-sum_reimbu.
       ENDIF.
 
+      READ TABLE it_swihead INTO wa_swihead with KEY wi_id = wa_final-wi_id + 1
+                                                             wi_type = 'B'.
+      IF sy-subrc = 0 .
+        wa_final-status = wa_swihead-WI_RHTEXT.
+      ENDIF.
+
       SELECT SINGLE ktext FROM cskt
         INTO wa_final-ktext
          WHERE kostl = wa_final-kostl.
@@ -456,6 +463,9 @@ ENDIF.
         WHERE pernr = wa_final-wi_cruser.
 
       APPEND wa_final TO it_final.
+
+      SORT it_final by wi_id.
+
       CLEAR : wa_final,wa_swihead,wa_top, emp_no,trip_no,result,status, wa_ptrv_shdr, wa_hrp1000.
 
     ELSE.
