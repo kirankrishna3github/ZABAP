@@ -11,29 +11,30 @@ TABLES:swwwihead, ptrv_head.
 
 
 TYPES :BEGIN OF ts_top,
-         wi_id     TYPE swwwihead-wi_id,
-         wi_type   TYPE swwwihead-wi_type,
-         wi_cd     TYPE swwwihead-wi_cd,
-         wi_cruser TYPE swwwihead-wi_cruser,
-         top_wi_id TYPE swwwihead-top_wi_id,
-         sname     TYPE pa0001-sname,
-         kostl     TYPE pa0001-kostl,
-         orgeh     TYPE pa0001-orgeh,
+         wi_id      TYPE swwwihead-wi_id,
+         wi_type    TYPE swwwihead-wi_type,
+         wi_cd      TYPE swwwihead-wi_cd,
+         wi_cruser  TYPE swwwihead-wi_cruser,
+         top_wi_id  TYPE swwwihead-top_wi_id,
+         sname      TYPE pa0001-sname,
+         kostl      TYPE pa0001-kostl,
+         orgeh      TYPE pa0001-orgeh,
+         wi_cruser1 TYPE string,
        END OF ts_top.
 
 TYPES :BEGIN OF ts_top1,
-         wi_id     TYPE swwwihead-wi_id,
-         wi_type   TYPE swwwihead-wi_type,
-         wi_cd     TYPE swwwihead-wi_cd,
-         wi_cruser TYPE swwwihead-wi_cruser,
-         top_wi_id TYPE swwwihead-top_wi_id,
-         sname     TYPE pa0001-sname,
-         kostl     TYPE pa0001-kostl,
-         orgeh     TYPE pa0001-orgeh,
-           wi_cruser1(8) TYPE N,
+         wi_id      TYPE swwwihead-wi_id,
+         wi_type    TYPE swwwihead-wi_type,
+         wi_cd      TYPE swwwihead-wi_cd,
+         wi_cruser  TYPE swwwihead-wi_cruser,
+         top_wi_id  TYPE swwwihead-top_wi_id,
+         sname      TYPE pa0001-sname,
+         kostl      TYPE pa0001-kostl,
+         orgeh      TYPE pa0001-orgeh,
+         wi_cruser1 TYPE pa0001-pernr,
        END OF ts_top1.
 
-DATA: it_top1 TYPE TABLE OF ts_top1 WITH HEADER LINE,
+DATA: it_top1 TYPE TABLE OF ts_top1 , "WITH HEADER LINE,
       wa_top1 TYPE ts_top1.
 
 
@@ -193,23 +194,21 @@ FORM get_data .
     AND wi_cruser IN s_cruser
     AND wi_type = 'F'.
 
-  it_top1[] = it_top[].
 
-  LOOP AT it_top1.
+  MOVE-CORRESPONDING it_top TO it_top1[] KEEPING TARGET LINES.
 
-    IF it_top1-wi_cruser CA '0123456789'.
+  LOOP AT it_top1 INTO wa_top1.
 
-  CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
-    EXPORTING
-      input = it_top1-wi_cruser
-  importing
-    output    = it_top1-wi_cruser1
-           .
-modify it_top1.
+    wa_top1-wi_cruser1 = wa_top1-wi_cruser.
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+      EXPORTING
+        input  = wa_top1-wi_cruser1
+      IMPORTING
+        output = wa_top1-wi_cruser1.
+    MODIFY it_top1 FROM wa_top1 index sy-tabix.
 
-ENDIF.
 
- ENDLOOP.
+  ENDLOOP.
 
 *    select
 *      a~wi_id
@@ -282,14 +281,14 @@ ENDIF.
        WHERE objid = it_pa0001-orgeh
        AND otype = 'O'.
 
-       SELECT
-      pernr
-      reinr
-      sum_reimbu
-      FROM ptrv_shdr
-      INTO TABLE it_ptrv_shdr
-      FOR ALL ENTRIES IN it_pa0001
-      WHERE pernr = it_pa0001-pernr.
+      SELECT
+     pernr
+     reinr
+     sum_reimbu
+     FROM ptrv_shdr
+     INTO TABLE it_ptrv_shdr
+     FOR ALL ENTRIES IN it_pa0001
+     WHERE pernr = it_pa0001-pernr.
 *
 
 
@@ -356,41 +355,40 @@ ENDIF.
           result = l_wa_wi_container-value.
         ENDIF.
 
-    IF trip_no = ' '.
+        IF trip_no = ' '.
 
-      CLEAR: l_it_wi_container[],l_wa_wi_container, l_wa_wi_header.
+          CLEAR: l_it_wi_container[],l_wa_wi_container, l_wa_wi_header.
 
-       lv_wid_read = wa_swihead-wi_id + 1.
+          lv_wid_read = wa_swihead-wi_id + 1.
 
-      CALL FUNCTION 'SWW_WI_CONTAINER_READ'
-        EXPORTING
-          wi_id                    = lv_wid_read
-        TABLES
-          wi_container             = l_it_wi_container
-        CHANGING
-          wi_header                = l_wa_wi_header
-        EXCEPTIONS
-          container_does_not_exist = 1
-          read_failed              = 2
-          OTHERS                   = 3.
+          CALL FUNCTION 'SWW_WI_CONTAINER_READ'
+            EXPORTING
+              wi_id                    = lv_wid_read
+            TABLES
+              wi_container             = l_it_wi_container
+            CHANGING
+              wi_header                = l_wa_wi_header
+            EXCEPTIONS
+              container_does_not_exist = 1
+              read_failed              = 2
+              OTHERS                   = 3.
 
 
-      IF sy-subrc = 0.
-        CLEAR: l_wa_wi_container.
-        READ TABLE l_it_wi_container INTO l_wa_wi_container
-        WITH KEY element = 'RESULT'
-                 tab_index = '000007'.
-        IF sy-subrc = 0.
-          CONDENSE l_wa_wi_container-value.
-          trip_no = l_wa_wi_container-value.
+          IF sy-subrc = 0.
+            CLEAR: l_wa_wi_container.
+
+
+            DELETE l_it_wi_container WHERE tab_index NE '000007' .
+
+            READ TABLE l_it_wi_container INTO l_wa_wi_container  INDEX 1.
+*        WITH KEY element = 'RESULT'
+*                 tab_index = '7'.
+            IF sy-subrc = 0.
+              CONDENSE l_wa_wi_container-value.
+              trip_no = l_wa_wi_container-value.
+            ENDIF.
+          ENDIF.
         ENDIF.
-
-
-        ENDIF.
-
-     endif.
-
-
 
 *        IF  result = '0001'.
 *          status = ' Travel Approved'.*
@@ -441,13 +439,14 @@ ENDIF.
       READ TABLE it_ptrv_shdr INTO wa_ptrv_shdr WITH TABLE KEY pernr = wa_final-empno
                                                                reinr = wa_final-tripno.
       IF sy-subrc = 0.
-         wa_final-sum_reimbu = wa_ptrv_shdr-sum_reimbu.
+        wa_final-sum_reimbu = wa_ptrv_shdr-sum_reimbu.
       ENDIF.
 
-      READ TABLE it_swihead INTO wa_swihead with KEY wi_id = wa_final-wi_id + 1
-                                                             wi_type = 'B'.
+      READ TABLE it_swihead INTO wa_swihead WITH KEY "wi_id = wa_final-wi_id + 1
+                                                     top_wi_id = wa_final-top_wi_id
+                                                      wi_type = 'B'.
       IF sy-subrc = 0 .
-        wa_final-status = wa_swihead-WI_RHTEXT.
+        wa_final-status = wa_swihead-wi_rhtext.
       ENDIF.
 
       SELECT SINGLE ktext FROM cskt
@@ -464,7 +463,7 @@ ENDIF.
 
       APPEND wa_final TO it_final.
 
-      SORT it_final by wi_id.
+      SORT it_final BY wi_id top_wi_id.
 
       CLEAR : wa_final,wa_swihead,wa_top, emp_no,trip_no,result,status, wa_ptrv_shdr, wa_hrp1000.
 
@@ -552,14 +551,14 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '10' . "column position
-  wa_fcat-fieldname = 'RESULT' . "column name
-  wa_fcat-tabname = 'IT_FINAL' . "table
-  wa_fcat-seltext_m = 'Result' . "Column label
-  APPEND wa_fcat TO it_fcat . "append to fcat
-  CLEAR wa_fcat.
+*  wa_fcat-col_pos = '10' . "column position
+*  wa_fcat-fieldname = 'RESULT' . "column name
+*  wa_fcat-tabname = 'IT_FINAL' . "table
+*  wa_fcat-seltext_m = 'Result' . "Column label
+*  APPEND wa_fcat TO it_fcat . "append to fcat
+*  CLEAR wa_fcat.
 
-  wa_fcat-col_pos = '11' . "column position
+  wa_fcat-col_pos = '10' . "column position
   wa_fcat-fieldname = 'WI_AAGENT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approver' . "Column label
@@ -567,7 +566,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '12' . "column position
+  wa_fcat-col_pos = '11' . "column position
   wa_fcat-fieldname = 'WI_AGNAME' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approver Name' . "Column label
@@ -575,21 +574,21 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '13' . "column position
+  wa_fcat-col_pos = '12' . "column position
   wa_fcat-fieldname = 'STATUS' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval Status' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '14' . "column position
+  wa_fcat-col_pos = '13' . "column position
   wa_fcat-fieldname = 'WI_STAT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Workflow Status' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '15' . "column position
+  wa_fcat-col_pos = '14' . "column position
   wa_fcat-fieldname = 'WI_TEXT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Work Item text' . "Column label
@@ -597,7 +596,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '16' . "column position
+  wa_fcat-col_pos = '15' . "column position
   wa_fcat-fieldname = 'WI_RHTEXT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Task Test' . "Column label
@@ -605,21 +604,21 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '17' . "column position
+  wa_fcat-col_pos = '16' . "column position
   wa_fcat-fieldname = 'WI_CD' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creation Date' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '18' . "column position
+  wa_fcat-col_pos = '17' . "column position
   wa_fcat-fieldname = 'WI_CT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creation Time' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '19' . "column position
+  wa_fcat-col_pos = '18' . "column position
   wa_fcat-fieldname = 'WI_AED' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approved On' . "Column label
@@ -627,7 +626,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-   wa_fcat-col_pos = '20' . "column position
+  wa_fcat-col_pos = '19' . "column position
   wa_fcat-fieldname = 'SUM_REIMBU' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Amount' . "Column label
