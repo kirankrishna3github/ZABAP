@@ -347,7 +347,18 @@ ENDIF.
           trip_no = l_wa_wi_container-value.
         ENDIF.
 
-        IF trip_no = ' '.
+
+        CLEAR: l_wa_wi_container.
+        READ TABLE l_it_wi_container INTO l_wa_wi_container
+        WITH KEY element = '_RESULT'.
+        IF sy-subrc = 0.
+          CONDENSE l_wa_wi_container-value.
+          result = l_wa_wi_container-value.
+        ENDIF.
+
+    IF trip_no = ' '.
+
+      CLEAR: l_it_wi_container[].
 
        lv_wid_read = wa_swihead-wi_id + 1.
 
@@ -379,13 +390,6 @@ ENDIF.
      endif.
 
 
-        CLEAR: l_wa_wi_container.
-        READ TABLE l_it_wi_container INTO l_wa_wi_container
-        WITH KEY element = '_RESULT'.
-        IF sy-subrc = 0.
-          CONDENSE l_wa_wi_container-value.
-          result = l_wa_wi_container-value.
-        ENDIF.
 
 *        IF  result = '0001'.
 *          status = ' Travel Approved'.*
