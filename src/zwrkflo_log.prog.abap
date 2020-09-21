@@ -68,8 +68,9 @@ TYPES: BEGIN OF ts_ptrv_head,
          sname TYPE pa0001-sname,
          kostl TYPE pa0001-kostl,
          orgeh TYPE pa0001-orgeh,
+         werks TYPE pa0001-werks,
          plans TYPE pa0001-plans,
-
+         sbmod TYPE pa0001-sbmod,
        END OF ts_ptrv_head.
 
 TYPES : BEGIN OF ts_hrp1000,
@@ -83,21 +84,39 @@ TYPES : BEGIN OF ts_apprv,
           objid TYPE hrp1001-objid,
           subty TYPE hrp1001-subty,
 *          sobid TYPE hrp1001-sobid,
-          sobid TYPE hrp1001-objid,
+          sobid(10) TYPE C,"hrp1001-objid,
         END OF ts_apprv.
 
-*TYPES : BEGIN OF ts_apprv2,
+
+TYPES :BEGIN OF ts_t526,
+         werks TYPE t526-werks,
+         sachx TYPE t526-sachx,
+         usrid TYPE t526-usrid,
+       END OF ts_t526.
+
+DATA: it_t526 TYPE TABLE OF ts_t526,
+      wa_t526 TYPE ts_t526.
+
+TYPES : BEGIN OF ts_apprv2,
+          otype TYPE hrp1001-otype,
+          objid TYPE hrp1001-objid,
+          subty TYPE hrp1001-subty,
+*          sobid TYPE hrp1001-sobid,
+            sobid(10) TYPE C,
+        END OF ts_apprv2.
+
+*TYPES : BEGIN OF ts_apprv3,
 *          otype TYPE hrp1001-otype,
 *          objid TYPE hrp1001-objid,
 *          subty TYPE hrp1001-subty,
 **          sobid TYPE hrp1001-sobid,
 *            sobid TYPE hrp1001-objid,
-*        END OF ts_apprv2.
+*        END OF ts_apprv3.
 
 DATA : it_apprv1 TYPE TABLE OF ts_apprv,
        wa_apprv1 TYPE ts_apprv.
-DATA : it_apprv2 TYPE TABLE OF ts_apprv,
-       wa_apprv2 TYPE ts_apprv.
+DATA : it_apprv2 TYPE TABLE OF ts_apprv2,
+       wa_apprv2 TYPE ts_apprv2.
 DATA : it_apprv3 TYPE TABLE OF ts_apprv,
        wa_apprv3 TYPE ts_apprv.
 
@@ -159,6 +178,7 @@ TYPES : BEGIN OF ts_final,
           apprv1     TYPE hrp1001-sobid,
           apprv2     TYPE hrp1001-sobid,
           apprv3     TYPE hrp1001-sobid,
+          apprv4     TYPE t526-usrid,
         END OF ts_final.
 
 DATA: it_final TYPE TABLE OF ts_final,
@@ -290,7 +310,9 @@ FORM get_data .
          sname
          kostl
          orgeh
-        plans
+        werks
+         plans
+        sbmod
         FROM pa0001
         INTO TABLE it_pa0001
         FOR ALL ENTRIES IN it_top1
@@ -324,44 +346,52 @@ FORM get_data .
         AND otype = 'S'
         AND subty = 'A002'.
 
-            SELECT
-        otype
-        objid
-        subty
-        sobid
-        FROM
-        hrp1001
-        INTO TABLE it_apprv2
-        FOR ALL ENTRIES IN it_apprv1
-        WHERE objid = it_apprv1-sobid
-        AND otype = 'S'
-        AND subty = 'A002'.
+*      SELECT
+*  otype
+*  objid
+*  subty
+*  sobid
+*  FROM
+*  hrp1001
+*  INTO TABLE it_apprv2
+*  FOR ALL ENTRIES IN it_apprv1
+*  WHERE objid = it_apprv1-sobid
+*  AND otype = 'S'
+*  AND subty = 'A002'.
+
+*      SELECT
+*        otype
+*        objid
+*        subty
+*        sobid
+*        FROM
+*        hrp1001
+*        INTO TABLE it_apprv3
+*        FOR ALL ENTRIES IN it_apprv2
+*        WHERE objid = it_apprv2-sobid
+*        AND otype = 'S'
+*        AND subty = 'A002'.
+*
+      SELECT
+        werks
+        sachx
+        usrid
+        FROM t526
+        INTO TABLE it_t526
+        FOR ALL ENTRIES IN it_pa0001
+        WHERE werks = it_pa0001-sbmod
+        AND sachx = 'AAA'.
+
 
       SELECT
-        otype
-        objid
-        subty
-        sobid
-        FROM
-        hrp1001
-        INTO TABLE it_apprv3
-        FOR ALL ENTRIES IN it_apprv2
-        WHERE objid = it_apprv2-sobid
-        AND otype = 'S'
-        AND subty = 'A002'.
-
-
-    SELECT
-     pernr
-     reinr
-     sum_reimbu
-     FROM ptrv_shdr
-     INTO TABLE it_ptrv_shdr
-     FOR ALL ENTRIES IN it_pa0001
-     WHERE pernr = it_pa0001-pernr.
+       pernr
+       reinr
+       sum_reimbu
+       FROM ptrv_shdr
+       INTO TABLE it_ptrv_shdr
+       FOR ALL ENTRIES IN it_pa0001
+       WHERE pernr = it_pa0001-pernr.
 *
-
-
     ENDIF.
 
 
@@ -537,34 +567,48 @@ FORM get_data .
                                                  subty  = 'A002'.
       IF sy-subrc = 0.
 
-      wa_final-apprv1 = wa_apprv1-sobid.
+        wa_final-apprv1 = wa_apprv1-sobid.
 
       ENDIF.
 
-       READ TABLE it_apprv2 INTO wa_apprv2 WITH KEY objid = wa_final-apprv1
-                                                 otype  = 'S'
-                                                 subty  = 'A002'.
-      IF sy-subrc = 0.
+      SELECT SINGLE Sobid FROM hrp1001 INTO wa_final-apprv2 WHERE objid = wa_final-apprv1
+        AND otype = 'S' and subty = 'A002'.
+*
+*      READ TABLE it_apprv2 INTO wa_apprv2 WITH KEY objid = wa_final-apprv1
+*                                                otype  = 'S'
+*                                                subty  = 'A002'.
+*      IF sy-subrc = 0.
+*
+*        wa_final-apprv2 = wa_apprv2-sobid.
+*
+*      ENDIF.
 
-      wa_final-apprv2 = wa_apprv2-sobid.
+         SELECT SINGLE Sobid FROM hrp1001 INTO wa_final-apprv3 WHERE objid = wa_final-apprv2
+        AND otype = 'S' and subty = 'A002'.
 
-      ENDIF.
+*      READ TABLE it_apprv3  INTO wa_apprv3 WITH KEY objid = wa_final-apprv1
+*                                                   otype  = 'S'
+*                                                   subty  = 'A002'.
+*      IF sy-subrc = 0.
+*
+*        wa_final-apprv3 = wa_apprv3-sobid.
+*
+*      ENDIF.
 
-    READ TABLE it_apprv3  INTO wa_apprv3 WITH KEY objid = wa_final-apprv1
-                                                 otype  = 'S'
-                                                 subty  = 'A002'.
-      IF sy-subrc = 0.
+ READ TABLE it_t526 INTO wa_t526 with KEY werks = wa_pa0001-sbmod
+                                          sachx = 'AAA'.
+IF  sy-subrc = 0.
 
-      wa_final-apprv3 = wa_apprv3-sobid.
+  wa_final-apprv4 = wa_t526-usrid.
 
-      ENDIF.
+ENDIF.
 
 
       APPEND wa_final TO it_final.
 
       SORT it_final BY wi_id top_wi_id.
 
-      CLEAR : wa_final,wa_swihead,wa_top, emp_no,trip_no,result,status, wa_ptrv_shdr, wa_hrp1000.
+      CLEAR : wa_final,wa_swihead,wa_top, emp_no,trip_no,result,status, wa_ptrv_shdr, wa_hrp1000, wa_t526, wa_apprv1.
 
     ELSE.
       DELETE it_swihead INDEX 1 .
@@ -679,21 +723,21 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-    wa_fcat-col_pos = '12' . "column position
+  wa_fcat-col_pos = '12' . "column position
   wa_fcat-fieldname = 'APPRV2' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval2 Code' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-    wa_fcat-col_pos = '13' . "column position
+  wa_fcat-col_pos = '13' . "column position
   wa_fcat-fieldname = 'APPRV3' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval3 Code' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-      wa_fcat-col_pos = '14' . "column position
+  wa_fcat-col_pos = '14' . "column position
   wa_fcat-fieldname = 'APPRV4' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval4 Code' . "Column label
