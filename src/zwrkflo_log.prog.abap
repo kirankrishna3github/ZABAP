@@ -73,6 +73,17 @@ TYPES: BEGIN OF ts_ptrv_head,
          sbmod TYPE pa0001-sbmod,
        END OF ts_ptrv_head.
 
+TYPES: BEGIN OF ts_date,
+         pernr      TYPE ptrv_head-pernr,
+         reinr      TYPE ptrv_head-reinr,
+         dates      TYPE ptrv_head-dates,
+         datv1      TYPE ptrv_head-datv1,
+         uhrv1      TYPE ptrv_head-uhrv1,
+  END OF ts_date.
+
+  DATA: it_date TYPE TABLE OF ts_date,
+        wa_date TYPE ts_date.
+
 TYPES : BEGIN OF ts_hrp1000,
           otype    TYPE hrp1000-otype,
           objid    TYPE hrp1000-objid,
@@ -80,11 +91,11 @@ TYPES : BEGIN OF ts_hrp1000,
         END OF ts_hrp1000.
 
 TYPES : BEGIN OF ts_apprv,
-          otype TYPE hrp1001-otype,
-          objid TYPE hrp1001-objid,
-          subty TYPE hrp1001-subty,
+          otype     TYPE hrp1001-otype,
+          objid     TYPE hrp1001-objid,
+          subty     TYPE hrp1001-subty,
 *          sobid TYPE hrp1001-sobid,
-          sobid(10) TYPE C,"hrp1001-objid,
+          sobid(10) TYPE c, "hrp1001-objid,
         END OF ts_apprv.
 
 
@@ -98,11 +109,11 @@ DATA: it_t526 TYPE TABLE OF ts_t526,
       wa_t526 TYPE ts_t526.
 
 TYPES : BEGIN OF ts_apprv2,
-          otype TYPE hrp1001-otype,
-          objid TYPE hrp1001-objid,
-          subty TYPE hrp1001-subty,
+          otype     TYPE hrp1001-otype,
+          objid     TYPE hrp1001-objid,
+          subty     TYPE hrp1001-subty,
 *          sobid TYPE hrp1001-sobid,
-            sobid(10) TYPE C,
+          sobid(10) TYPE c,
         END OF ts_apprv2.
 
 *TYPES : BEGIN OF ts_apprv3,
@@ -122,8 +133,8 @@ DATA : it_apprv3 TYPE TABLE OF ts_apprv,
 
 
 TYPES: BEGIN OF ts_ptrv_shdr,
-         pernr      TYPE ptrv_shdr-pernr,
-         reinr      TYPE ptrv_shdr-reinr,
+         pernr      TYPE ptrv_head-pernr,
+         reinr      TYPE ptrv_head-reinr,
          sum_reimbu TYPE ptrv_shdr-sum_reimbu,
        END OF ts_ptrv_shdr.
 
@@ -382,6 +393,16 @@ FORM get_data .
         WHERE werks = it_pa0001-sbmod
         AND sachx = 'AAA'.
 
+  SELECT
+    pernr
+    reinr
+    dates
+    datv1
+    uhrv1
+    FROM ptrv_head
+    INTO TABLE it_date
+    FOR ALL ENTRIES IN it_pa0001
+    WHERE pernr = it_pa0001-pernr.
 
       SELECT
        pernr
@@ -536,10 +557,19 @@ FORM get_data .
         wa_final-mc_seark = wa_hrp1000-mc_seark.
       ENDIF.
 
-      READ TABLE it_ptrv_shdr INTO wa_ptrv_shdr WITH TABLE KEY pernr = wa_final-empno
+      READ TABLE it_ptrv_shdr INTO wa_ptrv_shdr WITH KEY pernr = wa_final-empno
                                                                reinr = wa_final-tripno.
       IF sy-subrc = 0.
         wa_final-sum_reimbu = wa_ptrv_shdr-sum_reimbu.
+      ENDIF.
+
+      READ TABLE it_date INTO wa_date with KEY pernr = wa_final-empno
+                                               reinr = wa_final-tripno.
+      IF sy-subrc = 0.
+          wa_final-dates = wa_date-dates.
+          wa_final-datv1 = wa_date-datv1.
+          wa_final-uhrv1 = wa_date-uhrv1.
+
       ENDIF.
 
       READ TABLE it_swihead INTO wa_swihead WITH KEY "wi_id = wa_final-wi_id + 1
@@ -571,8 +601,8 @@ FORM get_data .
 
       ENDIF.
 
-      SELECT SINGLE Sobid FROM hrp1001 INTO wa_final-apprv2 WHERE objid = wa_final-apprv1
-        AND otype = 'S' and subty = 'A002'.
+      SELECT SINGLE sobid FROM hrp1001 INTO wa_final-apprv2 WHERE objid = wa_final-apprv1
+        AND otype = 'S' AND subty = 'A002'.
 *
 *      READ TABLE it_apprv2 INTO wa_apprv2 WITH KEY objid = wa_final-apprv1
 *                                                otype  = 'S'
@@ -583,8 +613,8 @@ FORM get_data .
 *
 *      ENDIF.
 
-         SELECT SINGLE Sobid FROM hrp1001 INTO wa_final-apprv3 WHERE objid = wa_final-apprv2
-        AND otype = 'S' and subty = 'A002'.
+      SELECT SINGLE sobid FROM hrp1001 INTO wa_final-apprv3 WHERE objid = wa_final-apprv2
+     AND otype = 'S' AND subty = 'A002'.
 
 *      READ TABLE it_apprv3  INTO wa_apprv3 WITH KEY objid = wa_final-apprv1
 *                                                   otype  = 'S'
@@ -595,13 +625,13 @@ FORM get_data .
 *
 *      ENDIF.
 
- READ TABLE it_t526 INTO wa_t526 with KEY werks = wa_pa0001-sbmod
-                                          sachx = 'AAA'.
-IF  sy-subrc = 0.
+      READ TABLE it_t526 INTO wa_t526 WITH KEY werks = wa_pa0001-sbmod
+                                               sachx = 'AAA'.
+      IF  sy-subrc = 0.
 
-  wa_final-apprv4 = wa_t526-usrid.
+        wa_final-apprv4 = wa_t526-usrid.
 
-ENDIF.
+      ENDIF.
 
 
       APPEND wa_final TO it_final.
@@ -694,12 +724,6 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-*  wa_fcat-col_pos = '10' . "column position
-*  wa_fcat-fieldname = 'RESULT' . "column name
-*  wa_fcat-tabname = 'IT_FINAL' . "table
-*  wa_fcat-seltext_m = 'Result' . "Column label
-*  APPEND wa_fcat TO it_fcat . "append to fcat
-*  CLEAR wa_fcat.
 
   wa_fcat-col_pos = '10' . "column position
   wa_fcat-fieldname = 'WI_AAGENT' . "column name
@@ -752,14 +776,35 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '16' . "column position
+    wa_fcat-col_pos = '16' . "column position
+  wa_fcat-fieldname = 'DATES' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Approval Date' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+    wa_fcat-col_pos = '17' . "column position
+  wa_fcat-fieldname = 'DATV1' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Date From' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+      wa_fcat-col_pos = '18' . "column position
+  wa_fcat-fieldname = 'UHRV1' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Date To' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+  wa_fcat-col_pos = '19' . "column position
   wa_fcat-fieldname = 'WI_STAT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Workflow Status' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '17' . "column position
+  wa_fcat-col_pos = '20' . "column position
   wa_fcat-fieldname = 'WI_TEXT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Work Item text' . "Column label
@@ -767,7 +812,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '18' . "column position
+  wa_fcat-col_pos = '21' . "column position
   wa_fcat-fieldname = 'WI_RHTEXT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Task Test' . "Column label
@@ -775,21 +820,21 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '19' . "column position
+  wa_fcat-col_pos = '22' . "column position
   wa_fcat-fieldname = 'WI_CD' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creation Date' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '20' . "column position
+  wa_fcat-col_pos = '23' . "column position
   wa_fcat-fieldname = 'WI_CT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creation Time' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '21' . "column position
+  wa_fcat-col_pos = '24' . "column position
   wa_fcat-fieldname = 'WI_AED' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approved On' . "Column label
@@ -797,7 +842,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '22' . "column position
+  wa_fcat-col_pos = '25' . "column position
   wa_fcat-fieldname = 'SUM_REIMBU' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Amount' . "Column label
