@@ -79,6 +79,7 @@ TYPES: BEGIN OF ts_date,
          dates      TYPE ptrv_head-dates,
          datv1      TYPE ptrv_head-datv1,
          uhrv1      TYPE ptrv_head-uhrv1,
+         datb1      TYPE ptrv_head-datb1,
   END OF ts_date.
 
   DATA: it_date TYPE TABLE OF ts_date,
@@ -177,7 +178,7 @@ TYPES : BEGIN OF ts_final,
           reinr      TYPE ptrv_head-reinr,
           dates      TYPE ptrv_head-dates,
           datv1      TYPE ptrv_head-datv1,
-          uhrv1      TYPE ptrv_head-uhrv1,
+          datb1      TYPE ptrv_head-datb1,
           sum_reimbu TYPE ptrv_shdr-sum_reimbu,
           sname      TYPE pa0001-sname,
           kostl      TYPE pa0001-kostl,
@@ -399,6 +400,7 @@ FORM get_data .
     dates
     datv1
     uhrv1
+    datb1
     FROM ptrv_head
     INTO TABLE it_date
     FOR ALL ENTRIES IN it_pa0001
@@ -568,7 +570,7 @@ FORM get_data .
       IF sy-subrc = 0.
           wa_final-dates = wa_date-dates.
           wa_final-datv1 = wa_date-datv1.
-          wa_final-uhrv1 = wa_date-uhrv1.
+          wa_final-datb1 = wa_date-datb1.
 
       ENDIF.
 
@@ -791,7 +793,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
       wa_fcat-col_pos = '18' . "column position
-  wa_fcat-fieldname = 'UHRV1' . "column name
+  wa_fcat-fieldname = 'DATB1' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Date To' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
