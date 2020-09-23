@@ -143,6 +143,8 @@ TYPES: BEGIN OF ts_ptrv_shdr,
 DATA: it_swihead TYPE TABLE OF ts_swwwihead,
       wa_swihead TYPE ts_swwwihead.
 
+DATA: it_swihead2 TYPE TABLE OF ts_swwwihead,
+      wa_swihead2 TYPE ts_swwwihead.
 
 
 DATA: it_ptrv TYPE TABLE OF ts_ptrv_head,
@@ -317,7 +319,25 @@ FORM get_data .
 *      AND wi_type = 'W'
       AND top_task = 'WS90000009'.
 
-
+    SELECT               "CI_NOFIELD
+      wi_id
+      wi_type
+      wi_text
+      wi_rhtext
+      wi_stat
+      wi_cd
+      wi_ct
+      wi_aed
+      wi_aagent
+*      wi_cruser
+      top_wi_id
+      top_task
+      FROM swwwihead
+      INTO TABLE it_swihead2
+      FOR ALL ENTRIES IN it_swihead
+      WHERE top_wi_id = it_swihead-top_wi_id
+      AND wi_type = 'W'
+      AND top_task = 'WS90000009'.
 
     IF it_swihead[] IS NOT INITIAL.
 
@@ -517,11 +537,6 @@ FORM get_data .
           ENDIF.
         ENDIF.
 
-*        IF  result = '0001'.
-*          status = ' Travel Approved'.*
-*        ELSEIF result = '0002'.
-*          status = 'Travel Rejected'.
-*        ENDIF.
 
         wa_final-empno = emp_no.
         wa_final-tripno = trip_no.
@@ -597,6 +612,26 @@ FORM get_data .
         FROM pa0001 INTO wa_final-wi_crname
         WHERE pernr = wa_final-wi_cruser.
 
+     READ TABLE it_swihead2 INTO wa_swihead2 INDEX 1 .
+      IF sy-subrc = 0 .
+        wa_final-apprv_dt1 = wa_swihead-wi_aed.
+      ENDIF.
+
+             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 2.
+      IF sy-subrc = 0 .
+        wa_final-apprv_dt2 = wa_swihead-wi_aed.
+      ENDIF.
+
+             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 3.
+      IF sy-subrc = 0 .
+        wa_final-apprv_dt3 = wa_swihead-wi_aed.
+      ENDIF.
+
+             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 4.
+      IF sy-subrc = 0 .
+        wa_final-apprv_dt4 = wa_swihead-wi_aed.
+      ENDIF.
+
 
       READ TABLE it_apprv1 INTO wa_apprv1 WITH KEY objid = wa_pa0001-plans
                                                  otype  = 'S'
@@ -609,27 +644,11 @@ FORM get_data .
 
       SELECT SINGLE sobid FROM hrp1001 INTO wa_final-apprv2 WHERE objid = wa_final-apprv1
         AND otype = 'S' AND subty = 'A002'.
-*
-*      READ TABLE it_apprv2 INTO wa_apprv2 WITH KEY objid = wa_final-apprv1
-*                                                otype  = 'S'
-*                                                subty  = 'A002'.
-*      IF sy-subrc = 0.
-*
-*        wa_final-apprv2 = wa_apprv2-sobid.
-*
-*      ENDIF.
+
 
       SELECT SINGLE sobid FROM hrp1001 INTO wa_final-apprv3 WHERE objid = wa_final-apprv2
      AND otype = 'S' AND subty = 'A002'.
 
-*      READ TABLE it_apprv3  INTO wa_apprv3 WITH KEY objid = wa_final-apprv1
-*                                                   otype  = 'S'
-*                                                   subty  = 'A002'.
-*      IF sy-subrc = 0.
-*
-*        wa_final-apprv3 = wa_apprv3-sobid.
-*
-*      ENDIF.
 
       READ TABLE it_t526 INTO wa_t526 WITH KEY werks = wa_pa0001-sbmod
                                                sachx = 'AAA'.
@@ -753,64 +772,91 @@ FORM fcat .
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '12' . "column position
+    wa_fcat-col_pos = '12' . "column position
+  wa_fcat-fieldname = 'APPRV_DT1' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Approval1 Date' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+  wa_fcat-col_pos = '13' . "column position
   wa_fcat-fieldname = 'APPRV2' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval2 Code' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '13' . "column position
+    wa_fcat-col_pos = '14' . "column position
+  wa_fcat-fieldname = 'APPRV_DT2' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Approval2 Date' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+  wa_fcat-col_pos = '15' . "column position
   wa_fcat-fieldname = 'APPRV3' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval3 Code' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '14' . "column position
+    wa_fcat-col_pos = '16' . "column position
+  wa_fcat-fieldname = 'APPRV_DT3' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Approval3 Date' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
+
+  wa_fcat-col_pos = '17' . "column position
   wa_fcat-fieldname = 'APPRV4' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval4 Code' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
+  wa_fcat-col_pos = '18' . "column position
+  wa_fcat-fieldname = 'APPRV_DT4' . "column name
+  wa_fcat-tabname = 'IT_FINAL' . "table
+  wa_fcat-seltext_m = 'Approval4 Date' . "Column label
+  APPEND wa_fcat TO it_fcat . "append to fcat
+  CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '15' . "column position
+  wa_fcat-col_pos = '19' . "column position
   wa_fcat-fieldname = 'STATUS' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approval Status' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-    wa_fcat-col_pos = '16' . "column position
-  wa_fcat-fieldname = 'DATES' . "column name
-  wa_fcat-tabname = 'IT_FINAL' . "table
-  wa_fcat-seltext_m = 'Approval Date' . "Column label
-  APPEND wa_fcat TO it_fcat . "append to fcat
-  CLEAR wa_fcat .
+*    wa_fcat-col_pos = '20' . "column position
+*  wa_fcat-fieldname = 'DATES' . "column name
+*  wa_fcat-tabname = 'IT_FINAL' . "table
+*  wa_fcat-seltext_m = 'Approval Date' . "Column label
+*  APPEND wa_fcat TO it_fcat . "append to fcat
+*  CLEAR wa_fcat .
 
-    wa_fcat-col_pos = '17' . "column position
+    wa_fcat-col_pos = '20' . "column position
   wa_fcat-fieldname = 'DATV1' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Date From' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-      wa_fcat-col_pos = '18' . "column position
+      wa_fcat-col_pos = '21' . "column position
   wa_fcat-fieldname = 'DATB1' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Date To' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '19' . "column position
+  wa_fcat-col_pos = '22' . "column position
   wa_fcat-fieldname = 'WI_STAT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Workflow Status' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '20' . "column position
+  wa_fcat-col_pos = '23' . "column position
   wa_fcat-fieldname = 'WI_TEXT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Work Item text' . "Column label
@@ -818,7 +864,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '21' . "column position
+  wa_fcat-col_pos = '24' . "column position
   wa_fcat-fieldname = 'WI_RHTEXT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Task Test' . "Column label
@@ -826,21 +872,21 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '22' . "column position
+  wa_fcat-col_pos = '25' . "column position
   wa_fcat-fieldname = 'WI_CD' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creation Date' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '23' . "column position
+  wa_fcat-col_pos = '26' . "column position
   wa_fcat-fieldname = 'WI_CT' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Creation Time' . "Column label
   APPEND wa_fcat TO it_fcat . "append to fcat
   CLEAR wa_fcat .
 
-  wa_fcat-col_pos = '24' . "column position
+  wa_fcat-col_pos = '27' . "column position
   wa_fcat-fieldname = 'WI_AED' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Approved On' . "Column label
@@ -848,7 +894,7 @@ FORM fcat .
   CLEAR wa_fcat .
 
 
-  wa_fcat-col_pos = '25' . "column position
+  wa_fcat-col_pos = '28' . "column position
   wa_fcat-fieldname = 'SUM_REIMBU' . "column name
   wa_fcat-tabname = 'IT_FINAL' . "table
   wa_fcat-seltext_m = 'Amount' . "Column label
