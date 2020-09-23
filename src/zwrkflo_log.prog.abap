@@ -191,6 +191,10 @@ TYPES : BEGIN OF ts_final,
           apprv2     TYPE hrp1001-sobid,
           apprv3     TYPE hrp1001-sobid,
           apprv4     TYPE t526-usrid,
+          apprv_dt1  TYPE swwwihead-wi_aed,
+          apprv_dt2  TYPE swwwihead-wi_aed,
+          apprv_dt3 TYPE swwwihead-wi_aed,
+          apprv_dt4  TYPE swwwihead-wi_aed,
         END OF ts_final.
 
 DATA: it_final TYPE TABLE OF ts_final,
