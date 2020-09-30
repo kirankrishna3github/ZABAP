@@ -458,7 +458,7 @@ FORM get_data .
 
     CLEAR: l_it_wi_container[], lv_wid_read,l_wa_wi_header.
 
-    IF wa_swihead-wi_aagent CA '0123456789'.
+*    IF wa_swihead-wi_aagent CA '0123456789'.    "commented on 30.09.2020
 
       lv_wid_read = wa_swihead-wi_id.
 
@@ -665,10 +665,10 @@ FORM get_data .
 
       CLEAR : wa_final,wa_swihead,wa_top, emp_no,trip_no,result,status, wa_ptrv_shdr, wa_hrp1000, wa_t526, wa_apprv1.
 
-    ELSE.
-      DELETE it_swihead INDEX 1 .
-
-    ENDIF.
+*    ELSE.
+*      DELETE it_swihead INDEX 1 .
+*
+*    ENDIF.
 
   ENDLOOP.
 
