@@ -352,7 +352,9 @@ FORM get_data .
         FROM pa0001
         INTO TABLE it_pa0001
         FOR ALL ENTRIES IN it_top1
-        WHERE pernr = it_top1-wi_cruser1.
+        WHERE pernr = it_top1-wi_cruser1
+        and begda GE  s_cd-low
+        and endda LE  s_cd-high.
     ENDIF.
 
 
