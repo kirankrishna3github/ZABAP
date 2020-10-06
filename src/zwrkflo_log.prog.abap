@@ -88,6 +88,7 @@ TYPES: BEGIN OF ts_date,
 TYPES : BEGIN OF ts_hrp1000,
           otype    TYPE hrp1000-otype,
           objid    TYPE hrp1000-objid,
+          stext    TYPE hrp1000-stext,
           mc_seark TYPE hrp1000-mc_seark,   " Deparment
         END OF ts_hrp1000.
 
@@ -364,6 +365,7 @@ FORM get_data .
       SELECT
        otype
        objid
+        stext
        mc_seark
        FROM hrp1000
        INTO TABLE it_hrp1000
@@ -577,7 +579,7 @@ FORM get_data .
       READ TABLE it_hrp1000 INTO wa_hrp1000 WITH KEY objid = wa_final-orgeh
                                                       otype = 'O'.
       IF sy-subrc = 0.
-        wa_final-mc_seark = wa_hrp1000-mc_seark.
+        wa_final-mc_seark = wa_hrp1000-stext.
       ENDIF.
 
       READ TABLE it_ptrv_shdr INTO wa_ptrv_shdr WITH KEY pernr = wa_final-empno
@@ -643,9 +645,9 @@ FORM get_data .
       IF WA_FINAL-APPRV1 NE ' ' .
 
        READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
-      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
+      IF sy-subrc = 0 AND wa_swihead-wi_aed <> '99991231'.
         wa_final-apprv_dt1 = wa_swihead-wi_aed.
-      ELSEIF wa_swihead-wi_cd = '99991231'.
+      ELSEIF wa_swihead-wi_aed = '99991231'.
         lv_wid_read = wa_swihead-wi_id + 1.
       READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
                                                       wi_type = 'B'.
@@ -657,9 +659,9 @@ FORM get_data .
       IF WA_FINAL-APPRV2 NE ' ' .
 
             READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
-      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
-        wa_final-apprv_dt1 = wa_swihead-wi_aed.
-      ELSEIF wa_swihead-wi_cd = '99991231'.
+      IF sy-subrc = 0 AND wa_swihead-wi_aed <> '99991231'.
+        wa_final-apprv_dt2 = wa_swihead-wi_aed.
+      ELSEIF wa_swihead-wi_aed = '99991231'.
         lv_wid_read = wa_swihead-wi_id + 1.
       READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
                                                       wi_type = 'B'.
@@ -674,9 +676,9 @@ FORM get_data .
 
       IF WA_FINAL-APPRV3 NE ' ' .
             READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
-      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
-        wa_final-apprv_dt1 = wa_swihead-wi_aed.
-      ELSEIF wa_swihead-wi_cd = '99991231'.
+      IF sy-subrc = 0 AND wa_swihead-wi_aed <> '99991231'.
+        wa_final-apprv_dt3 = wa_swihead-wi_aed.
+      ELSEIF wa_swihead-wi_aed = '99991231'.
         lv_wid_read = wa_swihead-wi_id + 1.
       READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
                                                       wi_type = 'B'.
@@ -693,9 +695,9 @@ FORM get_data .
         IF WA_FINAL-APPRV4 NE ' ' .
 
             READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
-      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
-        wa_final-apprv_dt1 = wa_swihead-wi_aed.
-      ELSEIF wa_swihead-wi_cd = '99991231'.
+      IF sy-subrc = 0 AND wa_swihead-wi_aed <> '99991231'.
+        wa_final-apprv_dt4 = wa_swihead-wi_aed.
+      ELSEIF wa_swihead-wi_aed = '99991231'.
         lv_wid_read = wa_swihead-wi_id + 1.
       READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
                                                       wi_type = 'B'.
