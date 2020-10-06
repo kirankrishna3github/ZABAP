@@ -647,9 +647,10 @@ FORM get_data .
 
     ENDIF.
 
-BREAK-POINT.
+
     IF wa_final-apprv1 NE ' ' .
 
+        CLEAR: wa_swihead2, wa_swihead.
       READ TABLE it_swihead2 INTO wa_swihead2  WITH KEY wi_id = wa_final-wi_id. "INDEX 1."
       IF sy-subrc = 0.
 
@@ -670,7 +671,7 @@ BREAK-POINT.
 
 
     IF wa_final-apprv2 NE ' ' .
-
+      CLEAR: wa_swihead2, wa_swihead.
       READ TABLE it_swihead2 INTO wa_swihead2 WITH KEY wi_id = wa_final-wi_id
                                                 wi_stat = 'COMPLETED'.
       IF sy-subrc = 0.
@@ -692,6 +693,7 @@ BREAK-POINT.
 
 
     IF wa_final-apprv3 NE ' ' .
+      CLEAR: wa_swihead2, wa_swihead.
       READ TABLE it_swihead2 INTO wa_swihead2 WITH KEY wi_id = wa_final-wi_id
                                                 wi_stat = 'COMPLETED'.
       IF sy-subrc = 0.
@@ -711,6 +713,7 @@ BREAK-POINT.
     ENDIF.
 
     IF wa_final-apprv4 NE ' ' .
+      CLEAR: wa_swihead2, wa_swihead.
       READ TABLE it_swihead2 INTO wa_swihead2 WITH KEY wi_id = wa_final-wi_id
                                       wi_stat = 'COMPLETED'.
       IF sy-subrc = 0.
