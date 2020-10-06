@@ -318,7 +318,7 @@ FORM get_data .
 *    WHERE wi_cd = s_cd
       WHERE top_wi_id = it_top-top_wi_id
 *      AND wi_type = 'W'
-      AND top_task = 'WS90000009'.
+     AND top_task = 'WS90000009'.
 
     SELECT               "CI_NOFIELD
       wi_id
@@ -642,9 +642,10 @@ FORM get_data .
 
       ENDIF.
 
-      IF WA_FINAL-APPRV1 NE ' ' .
 
-*       READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
+      IF WA_FINAL-APPRV1 NE ' ' .
+       READ TABLE it_swihead INTO wa_swihead with KEY top_wi_id = wa_final-top_wi_id
+                                                      wi_type = 'W'.
       IF  wa_swihead-wi_aed <> '99991231'.
         wa_final-apprv_dt1 = wa_swihead-wi_aed.
       ELSEIF wa_swihead-wi_aed EQ '99991231'.
@@ -652,7 +653,7 @@ FORM get_data .
         CLEAR : wa_swihead.
       READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
                                                       wi_type = 'B'.
-                 IF wa_swihead-wi_aed <> '99991231'.
+           IF wa_swihead-wi_aed <> '99991231'.
            wa_final-apprv_dt1 = wa_swihead-wi_aed.
        ENDIF..
       ENDIF.
@@ -692,7 +693,7 @@ FORM get_data .
        ENDIF.
 
       ENDIF.
-*
+
 *
 *             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 3.
 *      IF sy-subrc = 0 .
@@ -719,7 +720,6 @@ FORM get_data .
 *        wa_final-apprv_dt4 = wa_swihead-wi_aed.
 *      ENDIF.
       ENDIF.
-
 
       APPEND wa_final TO it_final.
 
