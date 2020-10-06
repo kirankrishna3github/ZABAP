@@ -647,35 +647,25 @@ FORM get_data .
 
     ENDIF.
 
-
+BREAK-POINT.
     IF wa_final-apprv1 NE ' ' .
-*       READ TABLE it_swihead INTO wa_swihead with KEY top_wi_id = wa_final-top_wi_id
-*                                                      wi_type = 'W'.
-*      IF  wa_swihead-wi_aed <> '99991231'.
-*        wa_final-apprv_dt1 = wa_swihead-wi_aed.
-*      ELSEIF wa_swihead-wi_aed EQ '99991231'.
-*        lv_wid_read = wa_swihead-wi_id + 1.
-*        CLEAR : wa_swihead.
-*      READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
-*                                                      wi_type = 'B'.
-*           IF wa_swihead-wi_aed <> '99991231'.
-*           wa_final-apprv_dt1 = wa_swihead-wi_aed.
-*       ENDIF..
-*      ENDIF.
-      READ TABLE it_swihead2 INTO wa_swihead2 WITH KEY wi_id = wa_final-wi_id.
+
+      READ TABLE it_swihead2 INTO wa_swihead2  WITH KEY wi_id = wa_final-wi_id. "INDEX 1."
+      IF sy-subrc = 0.
 
       READ TABLE it_swihead INTO wa_swihead WITH KEY wi_id = wa_swihead2-wi_id.
-      IF  wa_swihead-wi_aed <> '99991231' AND lv_COMP = ''.
+      IF  wa_swihead-wi_aed <> '99991231' AND lv_COMP = 'X'.
         wa_final-apprv_dt1 = wa_swihead-wi_aed.
       ELSE.
         lv_wid_read = wa_swihead2-wi_id + 1.
         CLEAR : wa_swihead.
         READ TABLE it_swihead INTO wa_swihead WITH KEY  wi_id = lv_wid_read
                                                           wi_type = 'B'.
-        IF wa_swihead-wi_aed <> '99991231'  AND lv_COMP = ''.
+        IF wa_swihead-wi_aed <> '99991231'  AND lv_COMP = 'X'.
           wa_final-apprv_dt1 = wa_swihead-wi_aed.
         ENDIF..
       ENDIF.
+    ENDIF.
     ENDIF.
 
 
@@ -685,14 +675,14 @@ FORM get_data .
                                                 wi_stat = 'COMPLETED'.
       IF sy-subrc = 0.
         READ TABLE it_swihead INTO wa_swihead WITH KEY wi_id = wa_swihead2-wi_id.
-        IF  wa_swihead-wi_aed <> '99991231' AND lv_COMP = ''.
+        IF  wa_swihead-wi_aed <> '99991231' AND lv_COMP = 'X'.
           wa_final-apprv_dt2 = wa_swihead-wi_aed.
         ELSE.
           lv_wid_read = wa_swihead2-wi_id + 1.
           CLEAR : wa_swihead.
           READ TABLE it_swihead INTO wa_swihead WITH KEY  wi_id = lv_wid_read
                                                             wi_type = 'B'.
-          IF wa_swihead-wi_aed <> '99991231'  AND lv_COMP = ''.
+          IF wa_swihead-wi_aed <> '99991231'  AND lv_COMP = 'X'.
             wa_final-apprv_dt2 = wa_swihead-wi_aed.
           ENDIF..
         ENDIF.
@@ -706,14 +696,14 @@ FORM get_data .
                                                 wi_stat = 'COMPLETED'.
       IF sy-subrc = 0.
         READ TABLE it_swihead INTO wa_swihead WITH KEY wi_id = wa_swihead2-wi_id.
-        IF  wa_swihead-wi_aed <> '99991231'  AND lv_COMP = ''.
+        IF  wa_swihead-wi_aed <> '99991231'  AND lv_COMP = 'X'.
           wa_final-apprv_dt3 = wa_swihead-wi_aed.
         ELSE.
           lv_wid_read = wa_swihead2-wi_id + 1.
           CLEAR : wa_swihead.
           READ TABLE it_swihead INTO wa_swihead WITH KEY  wi_id = lv_wid_read
                                                             wi_type = 'B'.
-          IF wa_swihead-wi_aed <> '99991231'  AND lv_COMP = ''.
+          IF wa_swihead-wi_aed <> '99991231'  AND lv_COMP = 'X'.
             wa_final-apprv_dt3 = wa_swihead-wi_aed.
           ENDIF..
         ENDIF.
@@ -725,14 +715,14 @@ FORM get_data .
                                       wi_stat = 'COMPLETED'.
       IF sy-subrc = 0.
         READ TABLE it_swihead INTO wa_swihead WITH KEY wi_id = wa_swihead2-wi_id.
-        IF  wa_swihead-wi_aed <> '99991231'  AND lv_COMP = ''.
+        IF  wa_swihead-wi_aed <> '99991231'  AND lv_COMP = 'X'.
           wa_final-apprv_dt4 = wa_swihead-wi_aed.
         ELSE.
           lv_wid_read = wa_swihead2-wi_id + 1.
           CLEAR : wa_swihead.
           READ TABLE it_swihead INTO wa_swihead WITH KEY  wi_id = lv_wid_read
                                                             wi_type = 'B'.
-          IF wa_swihead-wi_aed <> '99991231' AND lv_COMP = ''.
+          IF wa_swihead-wi_aed <> '99991231' AND lv_COMP = 'X'.
             wa_final-apprv_dt4 = wa_swihead-wi_aed.
           ENDIF..
         ENDIF.
