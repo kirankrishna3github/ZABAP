@@ -642,32 +642,70 @@ FORM get_data .
 
       IF WA_FINAL-APPRV1 NE ' ' .
 
-       READ TABLE it_swihead2 INTO wa_swihead2 INDEX 1 .
-      IF sy-subrc = 0 .
+       READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
+      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
         wa_final-apprv_dt1 = wa_swihead-wi_aed.
+      ELSEIF wa_swihead-wi_cd = '99991231'.
+        lv_wid_read = wa_swihead-wi_id + 1.
+      READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
+                                                      wi_type = 'B'.
+       wa_final-apprv_dt1 = wa_swihead-wi_aed.
       ENDIF.
 
       ENDIF.
 
       IF WA_FINAL-APPRV2 NE ' ' .
-             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 2.
-      IF sy-subrc = 0 .
-        wa_final-apprv_dt2 = wa_swihead-wi_aed.
+
+            READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
+      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
+        wa_final-apprv_dt1 = wa_swihead-wi_aed.
+      ELSEIF wa_swihead-wi_cd = '99991231'.
+        lv_wid_read = wa_swihead-wi_id + 1.
+      READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
+                                                      wi_type = 'B'.
+       wa_final-apprv_dt2 = wa_swihead-wi_aed.
       ENDIF.
+
+*             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 2.
+*      IF sy-subrc = 0 .
+*        wa_final-apprv_dt2 = wa_swihead-wi_aed.
+*      ENDIF.
       ENDIF.
 
       IF WA_FINAL-APPRV3 NE ' ' .
-             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 3.
-      IF sy-subrc = 0 .
-        wa_final-apprv_dt3 = wa_swihead-wi_aed.
+            READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
+      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
+        wa_final-apprv_dt1 = wa_swihead-wi_aed.
+      ELSEIF wa_swihead-wi_cd = '99991231'.
+        lv_wid_read = wa_swihead-wi_id + 1.
+      READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
+                                                      wi_type = 'B'.
+       wa_final-apprv_dt3 = wa_swihead-wi_aed.
       ENDIF.
+*
+*
+*             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 3.
+*      IF sy-subrc = 0 .
+*        wa_final-apprv_dt3 = wa_swihead-wi_aed.
+*      ENDIF.
       ENDIF.
 
         IF WA_FINAL-APPRV4 NE ' ' .
-             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 4.
-      IF sy-subrc = 0 .
-        wa_final-apprv_dt4 = wa_swihead-wi_aed.
+
+            READ TABLE it_swihead INTO wa_swihead with KEY wi_type = 'W'.
+      IF sy-subrc = 0 AND wa_swihead-wi_cd <> '99991231'.
+        wa_final-apprv_dt1 = wa_swihead-wi_aed.
+      ELSEIF wa_swihead-wi_cd = '99991231'.
+        lv_wid_read = wa_swihead-wi_id + 1.
+      READ TABLE it_swihead INTO wa_swihead with KEY  wi_id = lv_wid_read
+                                                      wi_type = 'B'.
+       wa_final-apprv_dt4 = wa_swihead-wi_aed.
       ENDIF.
+
+*             READ TABLE it_swihead2 INTO wa_swihead2 INDEX 4.
+*      IF sy-subrc = 0 .
+*        wa_final-apprv_dt4 = wa_swihead-wi_aed.
+*      ENDIF.
       ENDIF.
 
 
