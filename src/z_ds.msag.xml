@@ -26,6 +26,18 @@
      <MSGNR>002</MSGNR>
      <TEXT>Only 1 input must be supplied: PDF binary data or Smartform OTF data</TEXT>
     </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>Z_DS</ARBGB>
+     <MSGNR>003</MSGNR>
+     <TEXT>Invalid API type</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>Z_DS</ARBGB>
+     <MSGNR>004</MSGNR>
+     <TEXT>Sign location co-ordinates are mandatory</TEXT>
+    </T100>
    </T100>
   </asx:values>
  </asx:abap>
