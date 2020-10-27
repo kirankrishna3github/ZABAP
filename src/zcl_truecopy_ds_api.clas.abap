@@ -52,11 +52,52 @@ private section.
   class-methods GET_TIMESTAMP
     returning
       value(RV_TIMESTAMP) type STRING .
+  class-methods GET_PFXID
+    returning
+      value(RV_PFXID) type STRING .
+  class-methods GET_PFXPWD
+    returning
+      value(RV_PFXPWD) type STRING .
+  class-methods GET_APIKEY
+    returning
+      value(RV_APIKEY) type STRING .
 ENDCLASS.
 
 
 
 CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
+
+
+  method get_apikey.
+    clear rv_apikey.
+    rv_apikey = cond #( when zcl_helper=>is_development( )
+                          or zcl_helper=>is_quality( )
+                          or zcl_helper=>is_sandbox( )
+                        then 'BPUCZXPG'
+                        else 'prd_apikey'  ).
+  endmethod.
+
+
+  method get_pfxid.
+    clear rv_pfxid.
+
+    rv_pfxid = cond #( when zcl_helper=>is_development( )
+                         or zcl_helper=>is_quality( )
+                         or zcl_helper=>is_sandbox( )
+                       then 'samco_indofil'
+                       else 'prd_pfxid' ).
+  endmethod.
+
+
+  method get_pfxpwd.
+    clear rv_pfxpwd.
+
+    rv_pfxpwd = cond #( when zcl_helper=>is_development( )
+                          or zcl_helper=>is_quality( )
+                          or zcl_helper=>is_sandbox( )
+                        then 'samco'
+                        else 'prd_pfpwd' ).
+  endmethod.
 
 
   method get_timestamp.
@@ -75,10 +116,12 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       raise exception type zcx_generic message id 'Z_DS' type 'E' number '001'.
     endif.
 
+    " only 1 kind of pdf data must be supplied
     if ( iv_pdf_binary_data is not initial and it_smartf_otf_data is not initial ).
       raise exception type zcx_generic message id 'Z_DS' type 'E' number '002'.
     endif.
 
+    " check and format input parameters in api format
     data(ls_ds_parameters) = is_ds_parameters.
 
     if ls_ds_parameters-sign_loc_p is initial.
@@ -101,6 +144,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       lv_pdf_content = iv_pdf_binary_data.
     endif.
 
+    " convert otf to pdf binary format
     if it_smartf_otf_data is not initial.
       data: lv_pdf_size type sood-objlen,
             lt_pdf      type standard table of tline.
@@ -128,6 +172,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     endif.
 
     if lv_pdf_content is not initial.
+      " call corresponding API based on API type
       case iv_api_type.
         when mc_multipart_api.
         when mc_base64_api.
@@ -177,28 +222,34 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                              io_entity = cast #( lo_http_request ) ).
 
             if lo_multipart_form_data is not initial.
-              lo_multipart_form_data->set_form_fields(
-                exporting
-                  it_fields = value #( ( name = 'pfxid' value = cond #( when zcl_helper=>is_development( )
-                                                                          or zcl_helper=>is_quality( )
-                                                                          or zcl_helper=>is_sandbox( )
-                                                                        then 'samco_indofil'
-                                                                        else 'prd_pfxid' ) )
-                                        ( name = 'pfpwd' value = cond #( when zcl_helper=>is_development( )
-                                                                          or zcl_helper=>is_quality( )
-                                                                          or zcl_helper=>is_sandbox( )
-                                                                        then 'samco'
-                                                                        else 'prd_pfpwd' ) )
-                                        ( name = 'filepwd' value = '' )
-                                        ( name = 'signloc' value = is_ds_parameters-sign_loc )
-                                        ( name = 'signannotation' value = |{ cond #( when is_ds_parameters-approved_by is not initial
-                                                                                     then |Approved By:| ) }{ is_ds_parameters-approved_by }| )
-                                        ( name = 'timestamp' value = get_timestamp( ) )
-                                        ( name = 'checksum' value = |{ cond #( when zcl_helper=>is_development( )
-                                                                                 or zcl_helper=>is_quality( )
-                                                                                 or zcl_helper=>is_sandbox( )
-                                                                               then 'BPUCZXPG'
-                                                                               else 'prd_apikey'  ) }| ) ) ).
+              try.
+                  lo_multipart_form_data->set_form_fields(
+                    exporting
+                      it_fields = value #( ( name = 'pfxid' value = get_pfxid( ) )
+                                            ( name = 'pfxpwd' value = get_pfxpwd( ) )
+                                            ( name = 'filepwd' value = '' )
+                                            ( name = 'signloc' value = is_ds_parameters-sign_loc )
+                                            ( name = 'signannotation' value = |{ cond #( when is_ds_parameters-approved_by is not initial
+                                                                                         then |Approved By:| ) }{ is_ds_parameters-approved_by }| )
+                                            ( name = 'timestamp' value = get_timestamp( ) )
+                                            ( name = 'checksum'
+                                              value = substring( val = cl_nwbc_utility=>to_md5(
+                                                                         exporting
+                                                                           iv_value = |{ get_apikey( ) }| &&
+                                                                                                 |{ get_timestamp( ) }| ) off = 0 len = 16 ) )
+                                            ( name = 'descriptor' value = '' )
+                                            ( name = 'accessid' value = '' ) ) ).
+
+                  lo_multipart_form_data->set_file(
+                    exporting
+                      iv_name     = conv #( 'uploadfile' )                          " Form Field Name
+                      iv_filename = conv #( |{ lo_multipart_form_data->get_form_field( exporting iv_name = 'checksum' ) }| &&
+                                            |.{ if_rest_media_type=>gc_appl_pdf }| )                            " File Name
+                      iv_type     = if_rest_media_type=>gc_appl_pdf       " Content Type
+                      iv_data     = iv_pdf_binary_data ).    " Data
+
+                catch cx_sy_range_out_of_bounds ##no_handler.
+              endtry.
             endif.
           endif.
         endif.
