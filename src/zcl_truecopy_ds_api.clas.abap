@@ -194,7 +194,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                         ( name = 'signannotation' value = |{ cond #( when is_ds_parameters-approved_by is not initial
                                                                                      then |Approved By:| ) }{ is_ds_parameters-approved_by }| )
                                         ( name = 'timestamp' value = get_timestamp( ) )
-                                        ) ).
+                                        ( name = 'checksum' value = |{ cond #( when zcl_helper=>is_development( )
+                                                                                 or zcl_helper=>is_quality( )
+                                                                                 or zcl_helper=>is_sandbox( )
+                                                                               then 'BPUCZXPG'
+                                                                               else 'prd_apikey'  ) }| ) ) ).
             endif.
           endif.
         endif.
