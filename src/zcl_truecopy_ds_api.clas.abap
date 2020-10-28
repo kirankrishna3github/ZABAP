@@ -18,15 +18,23 @@ public section.
         approved_by type string,
       end of mty_ds_parameters_int .
 
-  class-data MC_MULTIPART_API type CHAR1 value '0' ##NO_TEXT.
-  class-data MC_BASE64_API type CHAR1 value '1' ##NO_TEXT.
+  constants:
+    begin of mc_api_type,
+        multipart_api type c length 1 value '0',
+        base64_api    type c length 1 value '1',
+      end of mc_api_type .
+  constants:
+    begin of mc_status_code,
+        ok                    type string value '200',
+        internal_server_error type string value '500',
+      end of mc_status_code .
 
   methods SIGN
     importing
       value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS
       value(IV_PDF_BINARY_DATA) type XSTRING optional
       value(IT_SMARTF_OTF_DATA) type TSFOTF optional
-      value(IV_API_TYPE) type CHAR1 default MC_MULTIPART_API
+      value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART_API
       value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
     returning
       value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
@@ -35,6 +43,14 @@ public section.
   methods CONSTRUCTOR .
 protected section.
 private section.
+
+  data MV_HEADER_TS type STRING .
+  data MV_TIMESTAMP type STRING .
+  data MV_PFXID type STRING .
+  data MV_PFXPWD type STRING .
+  data MV_APIKEY type STRING .
+  data MV_CHECKSUM type STRING .
+  data MT_EXCEPTION type STRING_TABLE .
 
   methods SIGN_MULTIPART
     importing
@@ -52,21 +68,27 @@ private section.
       value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
     raising
       ZCX_GENERIC .
-  class-methods GET_TIMESTAMP
+  methods GET_TIMESTAMP
     returning
       value(RV_TIMESTAMP) type STRING .
-  class-methods GET_PFXID
+  methods GET_PFXID
     returning
       value(RV_PFXID) type STRING .
-  class-methods GET_PFXPWD
+  methods GET_PFXPWD
     returning
       value(RV_PFXPWD) type STRING .
-  class-methods GET_APIKEY
+  methods GET_APIKEY
     returning
       value(RV_APIKEY) type STRING .
-  class-methods GET_CHECKSUM
+  methods GET_CHECKSUM
     returning
       value(RV_CHECKSUM) type STRING .
+  methods GET_DS_SERVER_STATUS
+    returning
+      value(RV_RUNNING) type ABAP_BOOL .
+  methods ADD_MESSAGE
+    importing
+      value(IV_TEXT) type STRING optional .
 ENDCLASS.
 
 
@@ -74,7 +96,26 @@ ENDCLASS.
 CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
-  method CONSTRUCTOR.
+  method add_message.
+    try.
+        data(lt_abap_callstack) = cl_abap_get_call_stack=>format_call_stack_with_struct(
+                                    exporting
+                                      stack = cl_abap_get_call_stack=>get_call_stack( ) ).
+
+        split lt_abap_callstack[ 2 ]-event at '=>' into data(lv_class_name) data(lv_method_name).
+
+        if iv_text is not initial.
+          data(lv_text) = iv_text.
+          lv_text = lv_method_name && ' - ' && lv_text.
+          append conv #( lv_text ) to mt_exception.
+        endif.
+      catch cx_root into data(lox_root).
+        add_message( exporting iv_text = conv #( lox_root->get_text( ) ) ).
+    endtry.
+  endmethod.
+
+
+  method constructor.
   endmethod.
 
 
@@ -95,6 +136,88 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                      exporting
                                        iv_value = |{ get_apikey( ) }| &&
                                                   |{ get_timestamp( ) }| ) off = 0 len = 16 ).
+  endmethod.
+
+
+  method get_ds_server_status.
+    clear rv_running.
+
+    cl_http_client=>create_by_url(
+      exporting
+        url                = conv #( |https://indofil.truecopy.in:443/ws/v1/signpdf| )           " URL
+      importing
+        client             = data(lo_http_client)        " HTTP Client Abstraction
+      exceptions
+        argument_not_found = 1             " Communication Parameters (Host or Service) Not Available
+        plugin_not_active  = 2             " HTTP/HTTPS Communication Not Available
+        internal_error     = 3             " Internal Error (e.g. name too long)
+        others             = 4 ).
+    if sy-subrc <> 0.
+      " error handling
+    endif.
+
+    if lo_http_client is bound.
+      data(lo_rest_client) = new cl_rest_http_client(
+                                    io_http_client = lo_http_client ).
+
+      if lo_rest_client is bound.
+        lo_rest_client->if_rest_client~get( ).
+
+        data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
+
+        if lo_response is bound.
+          data(lv_status_code) = lo_response->get_header_field(
+                                   exporting
+                                     iv_name = if_http_header_fields_sap=>status_code ).
+
+          case lv_status_code.
+            when mc_status_code-ok.
+              data:
+                begin of ls_server_status,
+                  message type string,
+                  status  type string,
+                  errcode type string,
+                end of ls_server_status.
+
+              data(lv_response_string) = lo_response->get_string_data( ).
+
+              clear ls_server_status.
+              /ui2/cl_json=>deserialize(
+                exporting
+                  json             = lv_response_string                       " JSON string
+                  pretty_name      = /ui2/cl_json=>pretty_mode-low_case       " Pretty Print property names
+                changing
+                  data             = ls_server_status ).                      " Data to serialize
+
+              rv_running = boolc( ls_server_status-status = '0' ).
+            when mc_status_code-internal_server_error.
+              rv_running = abap_false.
+            when others.
+          endcase.
+
+          data(lv_response_ts) = lo_response->get_header_field(
+                                   exporting
+                                     iv_name = if_http_header_fields=>date ).
+
+          if lv_response_ts is not initial.
+            lv_response_ts = condense( lv_response_ts ).
+            mv_header_ts = lv_response_ts.
+          endif.
+        endif.
+
+        " close the rest client
+        lo_rest_client->if_rest_client~close( ).
+      endif.
+
+      " close the http client
+      lo_http_client->close(
+        exceptions
+          http_invalid_state = 1 " Invalid state
+          others             = 2 ).
+      if sy-subrc <> 0.
+        " error handling
+      endif.
+    endif.
   endmethod.
 
 
@@ -123,73 +246,38 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method get_timestamp.
     clear rv_timestamp.
 
-    cl_http_client=>create_by_url(
-      exporting
-        url                = conv #( |https://indofil.truecopy.in:443/ws/v1/signpdf| )           " URL
-      importing
-        client             = data(lo_http_client)        " HTTP Client Abstraction
-      exceptions
-        argument_not_found = 1             " Communication Parameters (Host or Service) Not Available
-        plugin_not_active  = 2             " HTTP/HTTPS Communication Not Available
-        internal_error     = 3             " Internal Error (e.g. name too long)
-        others             = 4 ).
-    if sy-subrc <> 0.
-      " error handling
-    endif.
+    if mv_header_ts is not initial.
+      try.
+          data(lv_month) = to_upper( mv_header_ts+8(3) ).
+          data(lv_gmt_date) = |{ mv_header_ts+12(4) }{ cond #( when lv_month = 'JAN' then '01'
+                                                                 when lv_month = 'FEB' then '02'
+                                                                 when lv_month = 'MAR' then '03'
+                                                                 when lv_month = 'APR' then '04'
+                                                                 when lv_month = 'MAY' then '05'
+                                                                 when lv_month = 'JUN' then '06'
+                                                                 when lv_month = 'JUL' then '07'
+                                                                 when lv_month = 'AUG' then '08'
+                                                                 when lv_month = 'SEP' then '09'
+                                                                 when lv_month = 'OCT' then '10'
+                                                                 when lv_month = 'NOV' then '11'
+                                                                 when lv_month = 'DEC' then '12' ) }{ mv_header_ts+5(2) }|.
 
-    if lo_http_client is bound.
-      data(lo_rest_client) = new cl_rest_http_client(
-                                    io_http_client = lo_http_client ).
+          data(lv_gmt_time) = |{ mv_header_ts+17(2) }{ mv_header_ts+20(2) }{ mv_header_ts+23(2) }|.
 
-      if lo_rest_client is bound.
-        lo_rest_client->if_rest_client~get( ).
+          data(lv_ts) = value timestampl( ).
+          data(lv_tz) = value ttzz-tzone( ).
 
-        data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
+          convert date lv_gmt_date time lv_gmt_time into time stamp lv_ts time zone lv_tz.  " default utc
 
-        if lo_response is bound.
-          data(lv_response_ts) = lo_response->get_header_field( exporting iv_name = if_http_header_fields=>date ).
-
-          if lv_response_ts is not initial.
-            lv_response_ts = condense( lv_response_ts ).
-            try.
-                data(lv_month) = to_upper( lv_response_ts+8(3) ).
-                data(lv_gmt_date) = |{ lv_response_ts+12(4) }{ cond #( when lv_month = 'JAN' then '01'
-                                                                       when lv_month = 'FEB' then '02'
-                                                                       when lv_month = 'MAR' then '03'
-                                                                       when lv_month = 'APR' then '04'
-                                                                       when lv_month = 'MAY' then '05'
-                                                                       when lv_month = 'JUN' then '06'
-                                                                       when lv_month = 'JUL' then '07'
-                                                                       when lv_month = 'AUG' then '08'
-                                                                       when lv_month = 'SEP' then '09'
-                                                                       when lv_month = 'OCT' then '10'
-                                                                       when lv_month = 'NOV' then '11'
-                                                                       when lv_month = 'DEC' then '12' ) }{ lv_response_ts+5(2) }|.
-
-                data(lv_gmt_time) = |{ lv_response_ts+17(2) }{ lv_response_ts+20(2) }{ lv_response_ts+23(2) }|.
-
-                data(lv_ts) = value timestampl( ).
-                data(lv_tz) = value ttzz-tzone( ).
-
-                convert date lv_gmt_date time lv_gmt_time into time stamp lv_ts time zone lv_tz.  " default utc
-
-                lv_tz = sy-zonlo.
-                convert time stamp lv_ts time zone lv_tz into date data(lv_date) time data(lv_time).
-              catch cx_sy_range_out_of_bounds ##no_handler.
-                lv_date = sy-datum.
-                lv_time = sy-uzeit.
-            endtry.
-          endif.
-        endif.
-        lo_rest_client->if_rest_client~close( ).
-      endif.
-      lo_http_client->close(
-        exceptions
-          http_invalid_state = 1 " Invalid state
-          others             = 2 ).
-      if sy-subrc <> 0.
-        " error handling
-      endif.
+          lv_tz = sy-zonlo.
+          convert time stamp lv_ts time zone lv_tz into date data(lv_date) time data(lv_time).
+        catch cx_sy_range_out_of_bounds ##no_handler.
+          lv_date = sy-datum.
+          lv_time = sy-uzeit.
+      endtry.
+    else.
+      lv_date = sy-datum.
+      lv_time = sy-uzeit.
     endif.
 
     rv_timestamp = condense( |{ lv_date+6(2) }{ lv_date+4(2) }| && |{ lv_date+0(4) }| &&
@@ -263,7 +351,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     if lv_pdf_content is not initial.
       " call corresponding API based on API type
       case iv_api_type.
-        when mc_multipart_api.
+        when mc_api_type-multipart_api.
           try.
               rv_signed_pdf_binary_data = sign_multipart(
                                             exporting
@@ -273,7 +361,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
               raise exception type zcx_generic message id 'Z_DS' type 'E' number '000'
                 with lox_generic->get_text( ).
           endtry.
-        when mc_base64_api.
+        when mc_api_type-base64_api.
           try.
               rv_signed_pdf_binary_data = sign_base64(
                                             exporting
@@ -377,18 +465,14 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                            exporting
                                              iv_name = if_http_header_fields_sap=>status_code ).
 
-                  data(lv_status_reason) = lo_response->get_header_field(
-                                             exporting
-                                               iv_name = if_http_header_fields_sap=>status_reason ).
-
-                  case lv_status_reason.
-                    when if_http_status=>reason_200.  " OK
+                  case lv_status_code.
+                    when mc_status_code-ok.  " OK
                       data(lv_response_string) = lo_response->get_string_data( ).
                       data(lv_response_binary) = lo_response->get_binary_data( ).
                       data(lv_content_length) = lo_response->get_header_field(
                                                   exporting
                                                     iv_name = if_http_header_fields=>content_length ).
-                    when if_http_status=>reason_500.  " Error
+                    when mc_status_code-internal_server_error.  " Error
                       data:
                         begin of ls_error,
                           message type string,
