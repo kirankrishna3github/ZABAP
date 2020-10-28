@@ -38,6 +38,12 @@
      <MSGNR>004</MSGNR>
      <TEXT>Sign location co-ordinates are mandatory</TEXT>
     </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>Z_DS</ARBGB>
+     <MSGNR>005</MSGNR>
+     <TEXT>Truecopy DS server is down/unreachable</TEXT>
+    </T100>
    </T100>
   </asx:values>
  </asx:abap>

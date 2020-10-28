@@ -48,51 +48,54 @@ public section.
 protected section.
 private section.
 
-  data mv_header_ts type string .
-  data mv_timestamp type string .
-  data mv_pfxid type string .
-  data mv_pfxpwd type string .
-  data mv_apikey type string .
-  data mv_checksum type string .
-  data mt_message type string_table .
+  data MV_RUNNING type ABAP_BOOL .
+  data MV_HEADER_TS type STRING .
+  data MV_TIMESTAMP type STRING .
+  data MV_PFXID type STRING .
+  data MV_PFXPWD type STRING .
+  data MV_APIKEY type STRING .
+  data MV_CHECKSUM type STRING .
+  data MT_MESSAGE type STRING_TABLE .
 
-  methods sign_multipart
+  methods SIGN_MULTIPART
     importing
-      value(is_ds_parameters)          type mty_ds_parameters_int
-      value(iv_pdf_binary_data)        type xstring
+      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
+      value(IV_PDF_BINARY_DATA) type XSTRING
+    exporting
+      value(ET_MESSAGE) type MTTY_MESSAGE
     returning
-      value(rv_signed_pdf_binary_data) type xstring
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
+  methods SIGN_BASE64
+    importing
+      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
+      value(IV_PDF_BINARY_DATA) type XSTRING
+    exporting
+      value(ET_MESSAGE) type MTTY_MESSAGE
+    returning
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
     raising
-      zcx_generic .
-  methods sign_base64
+      ZCX_GENERIC .
+  methods GET_TIMESTAMP
+    returning
+      value(RV_TIMESTAMP) type STRING .
+  methods GET_PFXID
+    returning
+      value(RV_PFXID) type STRING .
+  methods GET_PFXPWD
+    returning
+      value(RV_PFXPWD) type STRING .
+  methods GET_APIKEY
+    returning
+      value(RV_APIKEY) type STRING .
+  methods GET_CHECKSUM
+    returning
+      value(RV_CHECKSUM) type STRING .
+  methods GET_DS_SERVER_STATUS
+    returning
+      value(RV_RUNNING) type ABAP_BOOL .
+  methods ADD_MESSAGE
     importing
-      value(is_ds_parameters)          type mty_ds_parameters_int
-      value(iv_pdf_binary_data)        type xstring
-    returning
-      value(rv_signed_pdf_binary_data) type xstring
-    raising
-      zcx_generic .
-  methods get_timestamp
-    returning
-      value(rv_timestamp) type string .
-  methods get_pfxid
-    returning
-      value(rv_pfxid) type string .
-  methods get_pfxpwd
-    returning
-      value(rv_pfxpwd) type string .
-  methods get_apikey
-    returning
-      value(rv_apikey) type string .
-  methods get_checksum
-    returning
-      value(rv_checksum) type string .
-  methods get_ds_server_status
-    returning
-      value(rv_running) type abap_bool .
-  methods add_message
-    importing
-      value(iv_text) type string optional .
+      value(IV_TEXT) type STRING optional .
 ENDCLASS.
 
 
@@ -120,26 +123,44 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method constructor.
+    data lv_message type string.
+
+    clear:
+      mv_running,
+      mv_header_ts,
+      mv_timestamp,
+      mv_pfxid,
+      mv_pfxpwd,
+      mv_apikey,
+      mv_checksum.
+
+    if get_ds_server_status( ).
+      get_timestamp( ).
+      get_pfxid( ).
+      get_pfxpwd( ).
+      get_apikey( ).
+      get_checksum( ).
+    endif.
   endmethod.
 
 
   method get_apikey.
     clear rv_apikey.
-    rv_apikey = cond #( when zcl_helper=>is_development( )
-                          or zcl_helper=>is_quality( )
-                          or zcl_helper=>is_sandbox( )
-                        then 'BPUCZXPG'
-                        else 'prd_apikey'  ).
+    rv_apikey = mv_apikey = cond #( when zcl_helper=>is_development( )
+                                      or zcl_helper=>is_quality( )
+                                      or zcl_helper=>is_sandbox( )
+                                    then 'BPUCZXPG'
+                                    else 'prd_apikey'  ).
   endmethod.
 
 
   method get_checksum.
     clear rv_checksum.
 
-    rv_checksum = substring( val = cl_nwbc_utility=>to_md5(
-                                     exporting
-                                       iv_value = |{ get_apikey( ) }| &&
-                                                  |{ get_timestamp( ) }| ) off = 0 len = 16 ).
+    rv_checksum = mv_checksum = substring( val = cl_nwbc_utility=>to_md5(
+                                                   exporting
+                                                     iv_value = |{ mv_apikey }| &&
+                                                                |{ mv_timestamp }| ) off = 0 len = 16 ).
   endmethod.
 
 
@@ -148,7 +169,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
     cl_http_client=>create_by_url(
       exporting
-        url                = conv #( |https://indofil.truecopy.in:443/ws/v1/signpdf| )           " URL
+        url                = conv #( |https://indofil.truecopy.in:443/ws/v1/status| )           " URL
       importing
         client             = data(lo_http_client)        " HTTP Client Abstraction
       exceptions
@@ -165,7 +186,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                     io_http_client = lo_http_client ).
 
       if lo_rest_client is bound.
-        lo_rest_client->if_rest_client~get( ).
+        try.
+            lo_rest_client->if_rest_client~get( ).
+          catch cx_rest_client_exception into data(lox_rest_client).
+            add_message( exporting iv_text = conv #( lox_rest_client->get_text( ) ) ).
+        endtry.
 
         data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
 
@@ -222,6 +247,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         " error handling
       endif.
     endif.
+
+    mv_running = rv_running.
   endmethod.
 
 
@@ -238,22 +265,22 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method get_pfxid.
     clear rv_pfxid.
 
-    rv_pfxid = cond #( when zcl_helper=>is_development( )
-                         or zcl_helper=>is_quality( )
-                         or zcl_helper=>is_sandbox( )
-                       then 'samco_indofil'
-                       else 'prd_pfxid' ).
+    rv_pfxid = mv_pfxid =  cond #( when zcl_helper=>is_development( )
+                                     or zcl_helper=>is_quality( )
+                                     or zcl_helper=>is_sandbox( )
+                                   then 'samco_indofil'
+                                   else 'prd_pfxid' ).
   endmethod.
 
 
   method get_pfxpwd.
     clear rv_pfxpwd.
 
-    rv_pfxpwd = cond #( when zcl_helper=>is_development( )
-                          or zcl_helper=>is_quality( )
-                          or zcl_helper=>is_sandbox( )
-                        then 'samco'
-                        else 'prd_pfpwd' ).
+    rv_pfxpwd = mv_pfxpwd = cond #( when zcl_helper=>is_development( )
+                                      or zcl_helper=>is_quality( )
+                                      or zcl_helper=>is_sandbox( )
+                                    then 'samco'
+                                    else 'prd_pfpwd' ).
   endmethod.
 
 
@@ -294,8 +321,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       lv_time = sy-uzeit.
     endif.
 
-    rv_timestamp = condense( |{ lv_date+6(2) }{ lv_date+4(2) }| && |{ lv_date+0(4) }| &&
-                             |{ lv_time+0(2) }:{ lv_time+2(2) }:{ lv_time+4(2) }| ).
+    rv_timestamp = mv_timestamp = condense( |{ lv_date+6(2) }{ lv_date+4(2) }| && |{ lv_date+0(4) }| &&
+                                            |{ lv_time+0(2) }:{ lv_time+2(2) }:{ lv_time+4(2) }| ).
   endmethod.
 
 
@@ -305,6 +332,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     clear:
       et_message,
       rv_signed_pdf_binary_data.
+
+    " DS server must be running
+    if mv_running = abap_false.
+      add_message 'Z_DS' 'E' '005' '' '' '' '' et_message.
+    endif.
 
     " at least one kind of pdf data must be supplied
     if iv_pdf_binary_data is initial and it_smartf_otf_data is initial.
@@ -361,9 +393,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           err_bad_otf           = 4
           others                = 5.
       if sy-subrc <> 0.
-        add_message sy-msgid sy-msgty sy-msgno
+        add_message sy-msgid 'E' sy-msgno
           sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
       endif.
+
+      lv_pdf_size = condense( lv_pdf_size ).
     endif.
 
     if lv_pdf_content is not initial.
@@ -372,16 +406,52 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         when mc_api_type-multipart_api.
           rv_signed_pdf_binary_data = sign_multipart(
                                         exporting
-                                          is_ds_parameters          = ls_ds_parameters_int    " DS mandatory parameters
-                                          iv_pdf_binary_data        = lv_pdf_content ).       " Un-Signed PDF binary data
+                                          is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
+                                          iv_pdf_binary_data = lv_pdf_content          " Un-Signed PDF binary data
+                                        importing
+                                          et_message         = et_message ).
         when mc_api_type-base64_api.
           rv_signed_pdf_binary_data = sign_base64(
                                         exporting
                                           is_ds_parameters   = ls_ds_parameters_int
-                                          iv_pdf_binary_data = iv_pdf_binary_data ).
+                                          iv_pdf_binary_data = iv_pdf_binary_data
+                                        importing
+                                          et_message         = et_message ).
         when others.
           add_message 'Z_DS' 'E' '003' '' '' '' '' et_message.
       endcase.
+
+      if rv_signed_pdf_binary_data is not initial.
+        if iv_display = abap_true.
+          data(lt_pdf_binary) = cl_bcs_convert=>xstring_to_solix( exporting iv_xstring = rv_signed_pdf_binary_data ).
+
+          cl_gui_frontend_services=>show_document(
+            exporting
+              document_name         = conv #( |{ mv_checksum }.pdf| )  " Default document file name
+              mime_type             = if_rest_media_type=>gc_appl_pdf      " MIME Type
+              data_length           = xstrlen( rv_signed_pdf_binary_data )    " File Length
+              keep_file             = abap_true      " Keep Temporary File
+            importing
+              temp_file_path        = data(lv_signed_pdf_file_path) " If KEEP_FILE='X', full path to temporary file
+            changing
+              document_data         = lt_pdf_binary  " Transfer table
+            exceptions
+              cntl_error            = 1              " Error when calling front-end control or internal error
+              error_no_gui          = 2              " No SAPGUI available (background mode)
+              bad_parameter         = 3              " Invalid input value
+              error_writing_data    = 4              " Error when downloading document content
+              error_starting_viewer = 5              " Cannot launch display application
+              unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
+              not_supported_by_gui  = 7              " Method not supported by client
+              access_denied         = 8              " Operation rejected by front end
+              no_authority          = 9              " Missing authority
+              others                = 10 ).
+          if sy-subrc <> 0.
+            add_message sy-msgid 'E' sy-msgno
+              sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
+          endif.
+        endif.
+      endif.
     endif.
   endmethod.
 
@@ -391,58 +461,60 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method sign_multipart.
-    clear rv_signed_pdf_binary_data.
+    try.
+        data lv_message type string.
 
-    if iv_pdf_binary_data is not initial and is_ds_parameters-sign_loc is not initial.
-      cl_http_client=>create_by_url(
-        exporting
-          url                = conv #( |https://indofil.truecopy.in:443/ws/v1/signpdf| )           " URL
-        importing
-          client             = data(lo_http_client)        " HTTP Client Abstraction
-        exceptions
-          argument_not_found = 1             " Communication Parameters (Host or Service) Not Available
-          plugin_not_active  = 2             " HTTP/HTTPS Communication Not Available
-          internal_error     = 3             " Internal Error (e.g. name too long)
-          others             = 4 ).
-      if sy-subrc <> 0.
-        raise exception type zcx_generic message id sy-msgid type sy-msgty number sy-msgno
-          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-      endif.
+        clear rv_signed_pdf_binary_data.
 
-      if lo_http_client is bound.
-        " get the rest client using http client for access to easier/pre-written/reusable rest method calls
-        data(lo_rest_client) = new cl_rest_http_client(
-                                     io_http_client = lo_http_client ).
+        if iv_pdf_binary_data is not initial and is_ds_parameters-sign_loc is not initial.
+          cl_http_client=>create_by_url(
+            exporting
+              url                = conv #( |https://indofil.truecopy.in:443/ws/v1/signpdf| )           " URL
+            importing
+              client             = data(lo_http_client)        " HTTP Client Abstraction
+            exceptions
+              argument_not_found = 1             " Communication Parameters (Host or Service) Not Available
+              plugin_not_active  = 2             " HTTP/HTTPS Communication Not Available
+              internal_error     = 3             " Internal Error (e.g. name too long)
+              others             = 4 ).
+          if sy-subrc <> 0.
+            add_message sy-msgid 'E' sy-msgno
+              sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
+          endif.
 
-        if lo_rest_client is bound.
-          " get the rest request object from the rest client
-          data(lo_request) = lo_rest_client->if_rest_client~create_request_entity( ).
+          if lo_http_client is bound.
+            " get the rest client using http client for access to easier/pre-written/reusable rest method calls
+            data(lo_rest_client) = new cl_rest_http_client(
+                                         io_http_client = lo_http_client ).
 
-          if lo_request is bound.
-            " set the content type as multipart form data
-            lo_request->set_content_type(
-              exporting
-                iv_media_type = if_rest_media_type=>gc_multipart_form_data ).
+            if lo_rest_client is bound.
+              " get the rest request object from the rest client
+              data(lo_request) = lo_rest_client->if_rest_client~create_request_entity( ).
 
-            " use the multipart class to access easier/pre-written/reusable methods for setting form fields and file data
-            data(lo_multipart_form_data) = new cl_rest_multipart_form_data(
-                                                 io_entity = lo_request ).
+              if lo_request is bound.
+                " set the content type as multipart form data
+                lo_request->set_content_type(
+                  exporting
+                    iv_media_type = if_rest_media_type=>gc_multipart_form_data ).
 
-            if lo_multipart_form_data is not initial.
-              try.
+                " use the multipart class to access easier/pre-written/reusable methods for setting form fields and file data
+                data(lo_multipart_form_data) = new cl_rest_multipart_form_data(
+                                                     io_entity = lo_request ).
+
+                if lo_multipart_form_data is not initial.
                   " set form fields as per api doc
                   lo_multipart_form_data->set_form_fields(
                     exporting
-                      it_fields = value #( ( name = 'pfxid' value = get_pfxid( ) )
-                                           ( name = 'pfxpwd' value = get_pfxpwd( ) )
+                      it_fields = value #( ( name = 'pfxid' value = mv_pfxid )
+                                           ( name = 'pfxpwd' value = mv_pfxpwd )
                                            ( name = 'filepwd' value = '' )
                                            ( name = 'signloc' value = is_ds_parameters-sign_loc )
                                            ( name = 'signannotation'
                                              value = |{ cond #( when is_ds_parameters-approved_by is not initial
                                                                 then |Approved By:| ) }| &&
                                                                      |{ is_ds_parameters-approved_by }| )
-                                           ( name = 'timestamp' value = get_timestamp( ) )
-                                           ( name = 'checksum'  value = get_checksum( ) )
+                                           ( name = 'timestamp' value = mv_timestamp )
+                                           ( name = 'checksum'  value = mv_checksum )
                                            ( name = 'descriptor' value = '' )
                                            ( name = 'accessid' value = '' ) ) ).
 
@@ -462,9 +534,14 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                       io_entity = cast #( lo_request ) ).
 
                   " send recieve - auto sets header field 'method type' to "POST'
-                  lo_rest_client->if_rest_client~post(
-                    exporting
-                      io_entity = cast #( lo_request ) ).
+                  try.
+                      lo_rest_client->if_rest_client~post(
+                        exporting
+                          io_entity = cast #( lo_request ) ).
+                    catch cx_rest_client_exception into data(lox_rest_client).
+                      data(lv_exc_text) = lox_rest_client->get_text( ).
+                      add_message 'Z_DS' 'E' '000' lv_exc_text '' '' '' et_message.
+                  endtry.
 
                   " get rest response oject from the rest client
                   data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
@@ -480,6 +557,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                       data(lv_content_length) = lo_response->get_header_field(
                                                   exporting
                                                     iv_name = if_http_header_fields=>content_length ).
+
+                      rv_signed_pdf_binary_data = lv_response_binary.
                     when mc_status_code-internal_server_error.  " Error
                       data:
                         begin of ls_error,
@@ -497,16 +576,17 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                         changing
                           data             = ls_error ).                              " Data to serialize
 
-                      raise exception type zcx_generic message id 'Z_DS' type 'E' number '000'
-                        with ls_error-message.
+                      add_message 'Z_DS' 'E' '000' ls_error-message '' '' '' et_message.
                     when others.
                   endcase.
-                catch cx_sy_range_out_of_bounds ##no_handler.
-              endtry.
+                endif.
+              endif.
             endif.
           endif.
         endif.
-      endif.
-    endif.
+      catch cx_root into data(lox_root).
+        lv_exc_text = lox_root->get_text( ).
+        add_message 'Z_DS' 'E' '000' lv_exc_text '' '' '' et_message.
+    endtry.
   endmethod.
 ENDCLASS.
