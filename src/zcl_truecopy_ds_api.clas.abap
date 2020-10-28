@@ -17,6 +17,7 @@ public section.
         sign_loc    type string,  " sign location in format sign_loc_p[sign_loc_x:sign_loc_y]
         approved_by type string,
       end of mty_ds_parameters_int .
+  types MTTY_MESSAGE type STRING_TABLE .
 
   constants:
     begin of mc_api_type,
@@ -36,59 +37,62 @@ public section.
       value(IT_SMARTF_OTF_DATA) type TSFOTF optional
       value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART_API
       value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
+    exporting
+      value(ET_MESSAGE) type MTTY_MESSAGE
     returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
-    raising
-      ZCX_GENERIC .
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
   methods CONSTRUCTOR .
+  methods GET_MESSAGES
+    returning
+      value(RT_MESSAGE) type MTTY_MESSAGE .
 protected section.
 private section.
 
-  data MV_HEADER_TS type STRING .
-  data MV_TIMESTAMP type STRING .
-  data MV_PFXID type STRING .
-  data MV_PFXPWD type STRING .
-  data MV_APIKEY type STRING .
-  data MV_CHECKSUM type STRING .
-  data MT_EXCEPTION type STRING_TABLE .
+  data mv_header_ts type string .
+  data mv_timestamp type string .
+  data mv_pfxid type string .
+  data mv_pfxpwd type string .
+  data mv_apikey type string .
+  data mv_checksum type string .
+  data mt_message type string_table .
 
-  methods SIGN_MULTIPART
+  methods sign_multipart
     importing
-      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
-      value(IV_PDF_BINARY_DATA) type XSTRING
+      value(is_ds_parameters)          type mty_ds_parameters_int
+      value(iv_pdf_binary_data)        type xstring
     returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
+      value(rv_signed_pdf_binary_data) type xstring
     raising
-      ZCX_GENERIC .
-  methods SIGN_BASE64
+      zcx_generic .
+  methods sign_base64
     importing
-      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
-      value(IV_PDF_BINARY_DATA) type XSTRING
+      value(is_ds_parameters)          type mty_ds_parameters_int
+      value(iv_pdf_binary_data)        type xstring
     returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
+      value(rv_signed_pdf_binary_data) type xstring
     raising
-      ZCX_GENERIC .
-  methods GET_TIMESTAMP
+      zcx_generic .
+  methods get_timestamp
     returning
-      value(RV_TIMESTAMP) type STRING .
-  methods GET_PFXID
+      value(rv_timestamp) type string .
+  methods get_pfxid
     returning
-      value(RV_PFXID) type STRING .
-  methods GET_PFXPWD
+      value(rv_pfxid) type string .
+  methods get_pfxpwd
     returning
-      value(RV_PFXPWD) type STRING .
-  methods GET_APIKEY
+      value(rv_pfxpwd) type string .
+  methods get_apikey
     returning
-      value(RV_APIKEY) type STRING .
-  methods GET_CHECKSUM
+      value(rv_apikey) type string .
+  methods get_checksum
     returning
-      value(RV_CHECKSUM) type STRING .
-  methods GET_DS_SERVER_STATUS
+      value(rv_checksum) type string .
+  methods get_ds_server_status
     returning
-      value(RV_RUNNING) type ABAP_BOOL .
-  methods ADD_MESSAGE
+      value(rv_running) type abap_bool .
+  methods add_message
     importing
-      value(IV_TEXT) type STRING optional .
+      value(iv_text) type string optional .
 ENDCLASS.
 
 
@@ -106,8 +110,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
         if iv_text is not initial.
           data(lv_text) = iv_text.
-          lv_text = lv_method_name && ' - ' && lv_text.
-          append conv #( lv_text ) to mt_exception.
+          lv_text = |{ lv_method_name } - { lv_text }|.
+          append conv #( lv_text ) to mt_message.
         endif.
       catch cx_root into data(lox_root).
         add_message( exporting iv_text = conv #( lox_root->get_text( ) ) ).
@@ -221,6 +225,16 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
+  method get_messages.
+    clear rt_message.
+
+    sort mt_message ascending as text.
+    delete adjacent duplicates from mt_message comparing all fields.
+
+    rt_message = mt_message.
+  endmethod.
+
+
   method get_pfxid.
     clear rv_pfxid.
 
@@ -286,16 +300,20 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method sign.
-    clear rv_signed_pdf_binary_data.
+    data lv_message type string.
+
+    clear:
+      et_message,
+      rv_signed_pdf_binary_data.
 
     " at least one kind of pdf data must be supplied
     if iv_pdf_binary_data is initial and it_smartf_otf_data is initial.
-      raise exception type zcx_generic message id 'Z_DS' type 'E' number '001'.
+      add_message 'Z_DS' 'E' '001' '' '' '' '' et_message.
     endif.
 
     " only 1 kind of pdf data must be supplied
     if ( iv_pdf_binary_data is not initial and it_smartf_otf_data is not initial ).
-      raise exception type zcx_generic message id 'Z_DS' type 'E' number '002'.
+      add_message 'Z_DS' 'E' '002' '' '' '' '' et_message.
     endif.
 
     " check and format input parameters in api format
@@ -306,7 +324,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     endif.
 
     if ls_ds_parameters-sign_loc_x is initial or ls_ds_parameters-sign_loc_y is initial.
-      raise exception type zcx_generic message id 'Z_DS' type 'E' number '004'.
+      add_message 'Z_DS' 'E' '004' '' '' '' '' et_message.
     endif.
 
     data(ls_ds_parameters_int) = value mty_ds_parameters_int(
@@ -343,8 +361,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           err_bad_otf           = 4
           others                = 5.
       if sy-subrc <> 0.
-        raise exception type zcx_generic message id sy-msgid type sy-msgty number sy-msgno
-          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+        add_message sy-msgid sy-msgty sy-msgno
+          sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
       endif.
     endif.
 
@@ -352,27 +370,17 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       " call corresponding API based on API type
       case iv_api_type.
         when mc_api_type-multipart_api.
-          try.
-              rv_signed_pdf_binary_data = sign_multipart(
-                                            exporting
-                                              is_ds_parameters          = ls_ds_parameters_int    " DS mandatory parameters
-                                              iv_pdf_binary_data        = lv_pdf_content ).       " Un-Signed PDF binary data
-            catch zcx_generic into data(lox_generic). " Generic Exception Class
-              raise exception type zcx_generic message id 'Z_DS' type 'E' number '000'
-                with lox_generic->get_text( ).
-          endtry.
+          rv_signed_pdf_binary_data = sign_multipart(
+                                        exporting
+                                          is_ds_parameters          = ls_ds_parameters_int    " DS mandatory parameters
+                                          iv_pdf_binary_data        = lv_pdf_content ).       " Un-Signed PDF binary data
         when mc_api_type-base64_api.
-          try.
-              rv_signed_pdf_binary_data = sign_base64(
-                                            exporting
-                                              is_ds_parameters   = ls_ds_parameters_int
-                                              iv_pdf_binary_data = iv_pdf_binary_data ).
-            catch zcx_generic into lox_generic. " Generic Exception Class
-              raise exception type zcx_generic message id 'Z_DS' type 'E' number '000'
-                with lox_generic->get_text( ).
-          endtry.
+          rv_signed_pdf_binary_data = sign_base64(
+                                        exporting
+                                          is_ds_parameters   = ls_ds_parameters_int
+                                          iv_pdf_binary_data = iv_pdf_binary_data ).
         when others.
-          raise exception type zcx_generic message id 'Z_DS' type 'E' number '003'.
+          add_message 'Z_DS' 'E' '003' '' '' '' '' et_message.
       endcase.
     endif.
   endmethod.
