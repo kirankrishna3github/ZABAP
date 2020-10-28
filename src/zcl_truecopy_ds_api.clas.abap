@@ -427,12 +427,12 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
           cl_gui_frontend_services=>show_document(
             exporting
-              document_name         = conv #( |{ mv_checksum }.pdf| )  " Default document file name
-              mime_type             = if_rest_media_type=>gc_appl_pdf      " MIME Type
-              data_length           = xstrlen( rv_signed_pdf_binary_data )    " File Length
-              keep_file             = abap_true      " Keep Temporary File
+              document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
+              mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
+              data_length           = xstrlen( rv_signed_pdf_binary_data )      " File Length
+              keep_file             = abap_true                                 " Keep Temporary File
             importing
-              temp_file_path        = data(lv_signed_pdf_file_path) " If KEEP_FILE='X', full path to temporary file
+              temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
             changing
               document_data         = lt_pdf_binary  " Transfer table
             exceptions
@@ -456,7 +456,10 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
-  method SIGN_BASE64.
+  method sign_base64.
+    data(lv_pdf_base64) = cl_http_utility=>encode_x_base64(
+                            exporting
+                              unencoded = iv_pdf_binary_data ).
   endmethod.
 
 
@@ -581,6 +584,17 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                   endcase.
                 endif.
               endif.
+
+              lo_rest_client->if_rest_client~close( ).
+            endif.
+
+            lo_http_client->close(
+              exceptions
+                http_invalid_state = 1 " Invalid state
+                others             = 2 ).
+            if sy-subrc <> 0.
+              add_message sy-msgid 'E' sy-msgno
+                sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
             endif.
           endif.
         endif.
