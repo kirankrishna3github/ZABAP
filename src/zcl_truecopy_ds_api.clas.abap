@@ -49,7 +49,9 @@ private section.
       value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
       value(IV_PDF_BINARY_DATA) type XSTRING
     returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
+    raising
+      ZCX_GENERIC .
   class-methods GET_TIMESTAMP
     returning
       value(RV_TIMESTAMP) type STRING .
@@ -196,11 +198,22 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           try.
               rv_signed_pdf_binary_data = sign_multipart(
                                             exporting
-                                              is_ds_parameters          = ls_ds_parameters_int          " DS mandatory parameters
+                                              is_ds_parameters          = ls_ds_parameters_int    " DS mandatory parameters
                                               iv_pdf_binary_data        = lv_pdf_content ).       " Un-Signed PDF binary data
             catch zcx_generic into data(lox_generic). " Generic Exception Class
+              raise exception type zcx_generic message id 'Z_DS' type 'E' number '000'
+                with lox_generic->get_text( ).
           endtry.
         when mc_base64_api.
+          try.
+              rv_signed_pdf_binary_data = sign_base64(
+                                            exporting
+                                              is_ds_parameters   = ls_ds_parameters_int
+                                              iv_pdf_binary_data = iv_pdf_binary_data ).
+            catch zcx_generic into lox_generic. " Generic Exception Class
+              raise exception type zcx_generic message id 'Z_DS' type 'E' number '000'
+                with lox_generic->get_text( ).
+          endtry.
         when others.
           raise exception type zcx_generic message id 'Z_DS' type 'E' number '003'.
       endcase.
@@ -299,6 +312,9 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                     when if_http_status=>reason_200.  " OK
                       data(lv_response_string) = lo_response->get_string_data( ).
                       data(lv_response_binary) = lo_response->get_binary_data( ).
+                      data(lv_content_length) = lo_response->get_header_field(
+                                                  exporting
+                                                    iv_name = if_http_header_fields=>content_length ).
                     when if_http_status=>reason_500.  " Error
                       data:
                         begin of ls_error,
@@ -315,6 +331,9 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                           pretty_name      = /ui2/cl_json=>pretty_mode-low_case       " Pretty Print property names
                         changing
                           data             = ls_error ).                              " Data to serialize
+
+                      raise exception type zcx_generic message id 'Z_DS' type 'E' number '000'
+                        with ls_error-message.
                     when others.
                   endcase.
                 catch cx_sy_range_out_of_bounds ##no_handler.
