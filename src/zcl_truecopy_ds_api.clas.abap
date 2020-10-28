@@ -123,8 +123,77 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method get_timestamp.
     clear rv_timestamp.
 
-    rv_timestamp = condense( |{ sy-datum+6(2) }{ sy-datum+4(2) }| && |{ sy-datum+0(4) }| &&
-                             |{ sy-uzeit+0(2) }:{ sy-uzeit+2(2) }:{ sy-uzeit+4(2) }| ).
+    cl_http_client=>create_by_url(
+      exporting
+        url                = conv #( |https://indofil.truecopy.in:443/ws/v1/signpdf| )           " URL
+      importing
+        client             = data(lo_http_client)        " HTTP Client Abstraction
+      exceptions
+        argument_not_found = 1             " Communication Parameters (Host or Service) Not Available
+        plugin_not_active  = 2             " HTTP/HTTPS Communication Not Available
+        internal_error     = 3             " Internal Error (e.g. name too long)
+        others             = 4 ).
+    if sy-subrc <> 0.
+      " error handling
+    endif.
+
+    if lo_http_client is bound.
+      data(lo_rest_client) = new cl_rest_http_client(
+                                    io_http_client = lo_http_client ).
+
+      if lo_rest_client is bound.
+        lo_rest_client->if_rest_client~get( ).
+
+        data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
+
+        if lo_response is bound.
+          data(lv_response_ts) = lo_response->get_header_field( exporting iv_name = if_http_header_fields=>date ).
+
+          if lv_response_ts is not initial.
+            lv_response_ts = condense( lv_response_ts ).
+            try.
+                data(lv_month) = to_upper( lv_response_ts+8(3) ).
+                data(lv_gmt_date) = |{ lv_response_ts+12(4) }{ cond #( when lv_month = 'JAN' then '01'
+                                                                       when lv_month = 'FEB' then '02'
+                                                                       when lv_month = 'MAR' then '03'
+                                                                       when lv_month = 'APR' then '04'
+                                                                       when lv_month = 'MAY' then '05'
+                                                                       when lv_month = 'JUN' then '06'
+                                                                       when lv_month = 'JUL' then '07'
+                                                                       when lv_month = 'AUG' then '08'
+                                                                       when lv_month = 'SEP' then '09'
+                                                                       when lv_month = 'OCT' then '10'
+                                                                       when lv_month = 'NOV' then '11'
+                                                                       when lv_month = 'DEC' then '12' ) }{ lv_response_ts+5(2) }|.
+
+                data(lv_gmt_time) = |{ lv_response_ts+17(2) }{ lv_response_ts+20(2) }{ lv_response_ts+23(2) }|.
+
+                data(lv_ts) = value timestampl( ).
+                data(lv_tz) = value ttzz-tzone( ).
+
+                convert date lv_gmt_date time lv_gmt_time into time stamp lv_ts time zone lv_tz.  " default utc
+
+                lv_tz = sy-zonlo.
+                convert time stamp lv_ts time zone lv_tz into date data(lv_date) time data(lv_time).
+              catch cx_sy_range_out_of_bounds ##no_handler.
+                lv_date = sy-datum.
+                lv_time = sy-uzeit.
+            endtry.
+          endif.
+        endif.
+        lo_rest_client->if_rest_client~close( ).
+      endif.
+      lo_http_client->close(
+        exceptions
+          http_invalid_state = 1 " Invalid state
+          others             = 2 ).
+      if sy-subrc <> 0.
+        " error handling
+      endif.
+    endif.
+
+    rv_timestamp = condense( |{ lv_date+6(2) }{ lv_date+4(2) }| && |{ lv_date+0(4) }| &&
+                             |{ lv_time+0(2) }:{ lv_time+2(2) }:{ lv_time+4(2) }| ).
   endmethod.
 
 
@@ -308,7 +377,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                            exporting
                                              iv_name = if_http_header_fields_sap=>status_code ).
 
-                  case lv_status_code.
+                  data(lv_status_reason) = lo_response->get_header_field(
+                                             exporting
+                                               iv_name = if_http_header_fields_sap=>status_reason ).
+
+                  case lv_status_reason.
                     when if_http_status=>reason_200.  " OK
                       data(lv_response_string) = lo_response->get_string_data( ).
                       data(lv_response_binary) = lo_response->get_binary_data( ).
