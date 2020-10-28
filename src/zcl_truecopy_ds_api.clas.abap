@@ -32,6 +32,7 @@ public section.
       value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
     raising
       ZCX_GENERIC .
+  methods CONSTRUCTOR .
 protected section.
 private section.
 
@@ -61,11 +62,18 @@ private section.
   class-methods GET_APIKEY
     returning
       value(RV_APIKEY) type STRING .
+  class-methods GET_CHECKSUM
+    returning
+      value(RV_CHECKSUM) type STRING .
 ENDCLASS.
 
 
 
 CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
+
+
+  method CONSTRUCTOR.
+  endmethod.
 
 
   method get_apikey.
@@ -75,6 +83,16 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                           or zcl_helper=>is_sandbox( )
                         then 'BPUCZXPG'
                         else 'prd_apikey'  ).
+  endmethod.
+
+
+  method get_checksum.
+    clear rv_checksum.
+
+    rv_checksum = substring( val = cl_nwbc_utility=>to_md5(
+                                     exporting
+                                       iv_value = |{ get_apikey( ) }| &&
+                                                  |{ get_timestamp( ) }| ) off = 0 len = 16 ).
   endmethod.
 
 
@@ -214,23 +232,23 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       endif.
 
       if lo_http_client is bound.
-        " cast http client to rest client for access to easier/pre-written/reusable rest method calls
-        data(lo_rest_client) = cast if_rest_client( new cl_rest_http_client(
-                                                      io_http_client = lo_http_client ) ).
+        " get the rest client using http client for access to easier/pre-written/reusable rest method calls
+        data(lo_rest_client) = new cl_rest_http_client(
+                                     io_http_client = lo_http_client ).
 
         if lo_rest_client is bound.
-          " get the http request object from the rest client
-          data(lo_http_request) = lo_rest_client->create_request_entity( ).
+          " get the rest request object from the rest client
+          data(lo_request) = lo_rest_client->if_rest_client~create_request_entity( ).
 
-          if lo_http_request is bound.
+          if lo_request is bound.
             " set the content type as multipart form data
-            lo_http_request->set_content_type(
+            lo_request->set_content_type(
               exporting
                 iv_media_type = if_rest_media_type=>gc_multipart_form_data ).
 
             " use the multipart class to access easier/pre-written/reusable methods for setting form fields and file data
             data(lo_multipart_form_data) = new cl_rest_multipart_form_data(
-                                             io_entity = cast #( lo_http_request ) ).
+                                                 io_entity = lo_request ).
 
             if lo_multipart_form_data is not initial.
               try.
@@ -241,43 +259,62 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                            ( name = 'pfxpwd' value = get_pfxpwd( ) )
                                            ( name = 'filepwd' value = '' )
                                            ( name = 'signloc' value = is_ds_parameters-sign_loc )
-                                           ( name = 'signannotation' value = |{ cond #( when is_ds_parameters-approved_by is not initial
-                                                                                        then |Approved By:| ) }{ is_ds_parameters-approved_by }| )
+                                           ( name = 'signannotation'
+                                             value = |{ cond #( when is_ds_parameters-approved_by is not initial
+                                                                then |Approved By:| ) }| &&
+                                                                     |{ is_ds_parameters-approved_by }| )
                                            ( name = 'timestamp' value = get_timestamp( ) )
-                                           ( name = 'checksum'
-                                             value = substring( val = cl_nwbc_utility=>to_md5(
-                                                                        exporting
-                                                                          iv_value = |{ get_apikey( ) }| &&
-                                                                                                |{ get_timestamp( ) }| ) off = 0 len = 16 ) )
+                                           ( name = 'checksum'  value = get_checksum( ) )
                                            ( name = 'descriptor' value = '' )
                                            ( name = 'accessid' value = '' ) ) ).
 
                   " set the unsigned pdf binary
                   lo_multipart_form_data->set_file(
                     exporting
-                      iv_name     = conv #( 'uploadfile' )                          " Form Field Name
-                      iv_filename = conv #( |{ lo_multipart_form_data->get_form_field( exporting iv_name = 'checksum' ) }| &&
-                                            |.{ if_rest_media_type=>gc_appl_pdf }| )                            " File Name
-                      iv_type     = if_rest_media_type=>gc_appl_pdf       " Content Type
-                      iv_data     = iv_pdf_binary_data ).    " Data
+                      iv_name     = conv #( 'uploadfile' )                                " Form Field Name
+                      iv_filename = conv #( |{ lo_multipart_form_data->get_form_field(
+                                                 exporting
+                                                   iv_name = 'checksum' ) }.pdf| )        " File Name
+                      iv_type     = if_rest_media_type=>gc_appl_pdf                       " Content Type
+                      iv_data     = iv_pdf_binary_data ).                                 " Data
 
                   " write the form fields and pdf binary to the http request object
-                  lo_multipart_form_data->write_to( exporting io_entity = cast #( lo_http_request ) ).
+                  lo_multipart_form_data->write_to(
+                    exporting
+                      io_entity = cast #( lo_request ) ).
 
                   " send recieve - auto sets header field 'method type' to "POST'
-                  lo_rest_client->post( exporting io_entity = cast #( lo_http_request ) ).
-
-                  " get http response oject from the rest client
-                  data(lo_http_response) = lo_rest_client->get_response_entity( ).
-
-                  data(lv_status_code) = lo_http_response->get_header_field(
+                  lo_rest_client->if_rest_client~post(
                     exporting
-                      iv_name = if_http_header_fields_sap=>status_code ).
+                      io_entity = cast #( lo_request ) ).
+
+                  " get rest response oject from the rest client
+                  data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
+
+                  data(lv_status_code) = lo_response->get_header_field(
+                                           exporting
+                                             iv_name = if_http_header_fields_sap=>status_code ).
 
                   case lv_status_code.
                     when if_http_status=>reason_200.  " OK
-                      data(lv_response) = lo_http_response->get_string_data( ).
+                      data(lv_response_string) = lo_response->get_string_data( ).
+                      data(lv_response_binary) = lo_response->get_binary_data( ).
                     when if_http_status=>reason_500.  " Error
+                      data:
+                        begin of ls_error,
+                          message type string,
+                          status  type string,
+                        end of ls_error.
+
+                      lv_response_string = lo_response->get_string_data( ).
+
+                      clear ls_error.
+                      /ui2/cl_json=>deserialize(
+                        exporting
+                          json             = lv_response_string                       " JSON string
+                          pretty_name      = /ui2/cl_json=>pretty_mode-low_case       " Pretty Print property names
+                        changing
+                          data             = ls_error ).                              " Data to serialize
                     when others.
                   endcase.
                 catch cx_sy_range_out_of_bounds ##no_handler.
