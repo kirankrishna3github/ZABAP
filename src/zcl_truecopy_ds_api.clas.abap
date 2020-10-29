@@ -42,9 +42,6 @@ public section.
     returning
       value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
   methods CONSTRUCTOR .
-  methods GET_MESSAGES
-    returning
-      value(RT_MESSAGE) type MTTY_MESSAGE .
 protected section.
 private section.
 
@@ -57,6 +54,9 @@ private section.
   data MV_CHECKSUM type STRING .
   data MT_MESSAGE type STRING_TABLE .
 
+  methods GET_MESSAGES
+    returning
+      value(RT_MESSAGE) type MTTY_MESSAGE .
   methods SIGN_MULTIPART
     importing
       value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
@@ -95,7 +95,11 @@ private section.
       value(RV_RUNNING) type ABAP_BOOL .
   methods ADD_MESSAGE
     importing
-      value(IV_TEXT) type STRING optional .
+      value(IV_TEXT) type STRING optional
+      value(IS_SYMSG) type SYMSG optional
+      value(IOX_EXCEPTION) type ref to CX_ROOT optional
+    returning
+      value(RT_MESSAGE) type MTTY_MESSAGE .
 ENDCLASS.
 
 
@@ -116,8 +120,30 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           lv_text = |{ lv_method_name } - { lv_text }|.
           append conv #( lv_text ) to mt_message.
         endif.
+
+        if is_symsg is not initial.
+          data(ls_symsg) = is_symsg.
+          ls_symsg-msgid = cond #( when is_symsg-msgid is not initial
+                                   then is_symsg-msgid
+                                   else 'Z_DS' ).
+
+          ls_symsg-msgty = 'E'.
+
+          message id ls_symsg-msgid type ls_symsg-msgty number ls_symsg-msgno
+            with ls_symsg-msgv1 ls_symsg-msgv2 ls_symsg-msgv3 ls_symsg-msgv4
+            into lv_text.
+
+          add_message( exporting iv_text = lv_text ).
+        endif.
+
+        if iox_exception is bound.
+          add_message( exporting iv_text = conv #( iox_exception->get_text( ) ) ).
+        endif.
+
+        clear rt_message.
+        rt_message = get_messages( ).
       catch cx_root into data(lox_root).
-        add_message( exporting iv_text = conv #( lox_root->get_text( ) ) ).
+        add_message( exporting iox_exception = lox_root ).
     endtry.
   endmethod.
 
@@ -335,7 +361,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
     " DS server must be running
     if mv_running = abap_false.
-      add_message 'Z_DS' 'E' '005' '' '' '' '' et_message.
+      add_message( exporting is_symsg = value #( msgno = '005' ) ).
+      return.
     endif.
 
     " at least one kind of pdf data must be supplied
