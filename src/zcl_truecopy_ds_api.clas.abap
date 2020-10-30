@@ -1,115 +1,119 @@
-class zcl_truecopy_ds_api definition
+class ZCL_TRUECOPY_DS_API definition
   public
   final
   create public .
 
-  public section.
+public section.
 
-    types:
-      begin of mty_ds_parameters,
+  types:
+    begin of mty_ds_parameters,
         sign_loc_p  type string,  " page no. on which the DS should be placed
         sign_loc_x  type string,  " no. of columns to the right from bottom left corner
         sign_loc_y  type string,  " no. of rows above the bottom left corner
         approved_by type string,
       end of mty_ds_parameters .
-    types:
-      begin of mty_ds_parameters_int,
+  types:
+    begin of mty_ds_parameters_int,
         sign_loc    type string,  " sign location in format sign_loc_p[sign_loc_x:sign_loc_y]
         approved_by type string,
       end of mty_ds_parameters_int .
-    types mtty_message type string_table .
+  types MTTY_MESSAGE type STRING_TABLE .
 
-    constants:
-      begin of mc_api_type,
-        multipart_api type c length 1 value '0',
-        base64_api    type c length 1 value '1',
+  constants:
+    begin of mc_api_type,
+        multipart type c length 1 value '0',
+        base64    type c length 1 value '1',
       end of mc_api_type .
-    constants:
-      begin of mc_status_code,
+  constants:
+    begin of mc_status_code,
         ok                    type string value '200',
         internal_server_error type string value '500',
       end of mc_status_code .
-
-    constants:
-      begin of mc_api_endpoint_url,
+  constants:
+    begin of mc_api_endpoint_url,
         multipart type string value 'https://indofil.truecopy.in:443/ws/v1/signpdf',
         base64    type string value 'https://indofil.truecopy.in:443/ws/v1/signstructdataRetB64',
         status    type string value 'https://indofil.truecopy.in:443/ws/v1/status',
-      end of mc_api_endpoint_url.
+      end of mc_api_endpoint_url .
+  constants MC_FILE_FILTER_PDF type STRING value 'PDF files (*.pdf)|*.pdf' ##NO_TEXT.
 
-    methods sign
-      importing
-        value(is_ds_parameters)          type mty_ds_parameters
-        value(iv_pdf_binary_data)        type xstring optional
-        value(it_smartf_otf_data)        type tsfotf optional
-        value(iv_api_type)               type char1 default mc_api_type-multipart_api
-        value(iv_display)                type abap_bool default abap_true
-      exporting
-        value(et_message)                type mtty_message
-      returning
-        value(rv_signed_pdf_binary_data) type xstring .
-    methods constructor .
-protected section.
-private section.
-
-  data MV_RUNNING type ABAP_BOOL .
-  data MV_HEADER_TS type STRING .
-  data MV_TIMESTAMP type STRING .
-  data MV_PFXID type STRING .
-  data MV_PFXPWD type STRING .
-  data MV_APIKEY type STRING .
-  data MV_CHECKSUM type STRING .
-  data MT_MESSAGE type STRING_TABLE .
-
-  methods GET_MESSAGES
-    returning
-      value(RT_MESSAGE) type MTTY_MESSAGE .
-  methods SIGN_MULTIPART
+  methods SIGN
     importing
-      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
-      value(IV_PDF_BINARY_DATA) type XSTRING
-    returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
-  methods SIGN_BASE64
-    importing
-      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
-      value(IV_PDF_BINARY_DATA) type XSTRING
+      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS
+      value(IV_PDF_BINARY_DATA) type XSTRING optional
+      value(IT_SMARTF_OTF_DATA) type TSFOTF optional
+      value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART
+      value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
     exporting
       value(ET_MESSAGE) type MTTY_MESSAGE
     returning
       value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
-  methods GET_TIMESTAMP
-    returning
-      value(RV_TIMESTAMP) type STRING .
-  methods GET_PFXID
-    returning
-      value(RV_PFXID) type STRING .
-  methods GET_PFXPWD
-    returning
-      value(RV_PFXPWD) type STRING .
-  methods GET_APIKEY
-    returning
-      value(RV_APIKEY) type STRING .
-  methods GET_CHECKSUM
-    returning
-      value(RV_CHECKSUM) type STRING .
-  methods GET_DS_SERVER_STATUS
-    returning
-      value(RV_RUNNING) type ABAP_BOOL .
-  methods ADD_MESSAGE
+  methods CONSTRUCTOR .
+  class-methods GET_NUM_OF_PDF_PAGES
     importing
-      value(IV_TEXT) type STRING optional
-      value(IS_SYMSG) type SYMSG optional
-      value(IOX_EXCEPTION) type ref to CX_ROOT optional
+      value(IV_PDF_BINARY_DATA) type XSTRING optional
+      value(IT_SMARTF_OTF_DATA) type TSFOTF optional
     returning
-      value(RT_MESSAGE) type MTTY_MESSAGE .
-  methods CREATE_REST_CLIENT
-    importing
-      value(IV_API_ENDPOINT_URL) type STRING
-    returning
-      value(RO_REST_CLIENT) type ref to CL_REST_HTTP_CLIENT .
-  methods CLEANUP .
-  methods INITIALIZE .
+      value(RV_NUM_OF_PAGES) type I .
+  protected section.
+  private section.
+
+    data mv_running type abap_bool .
+    data mv_header_ts type string .
+    data mv_timestamp type string .
+    data mv_pfxid type string .
+    data mv_pfxpwd type string .
+    data mv_apikey type string .
+    data mv_checksum type string .
+    data mt_message type string_table .
+
+    methods get_messages
+      returning
+        value(rt_message) type mtty_message .
+    methods sign_multipart
+      importing
+        value(is_ds_parameters)          type mty_ds_parameters_int
+        value(iv_pdf_binary_data)        type xstring
+      returning
+        value(rv_signed_pdf_binary_data) type xstring .
+    methods sign_base64
+      importing
+        value(is_ds_parameters)          type mty_ds_parameters_int
+        value(iv_pdf_binary_data)        type xstring
+      exporting
+        value(et_message)                type mtty_message
+      returning
+        value(rv_signed_pdf_binary_data) type xstring .
+    methods get_timestamp
+      returning
+        value(rv_timestamp) type string .
+    methods get_pfxid
+      returning
+        value(rv_pfxid) type string .
+    methods get_pfxpwd
+      returning
+        value(rv_pfxpwd) type string .
+    methods get_apikey
+      returning
+        value(rv_apikey) type string .
+    methods get_checksum
+      returning
+        value(rv_checksum) type string .
+    methods check_ds_server_status
+      returning
+        value(rv_running) type abap_bool .
+    methods add_message
+      importing
+        value(iv_text)       type string optional
+        value(is_symsg)      type symsg optional
+        value(iox_exception) type ref to cx_root optional .
+    methods create_rest_client
+      importing
+        value(iv_api_endpoint_url) type string
+      returning
+        value(ro_rest_client)      type ref to cl_rest_http_client .
+    methods cleanup .
+    methods initialize .
 ENDCLASS.
 
 
@@ -152,9 +156,74 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
           append conv #( |{ lv_method_name } - { lv_text }| ) to mt_message.
         endif.
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
+  endmethod.
 
-        clear rt_message.
-        rt_message = get_messages( ).
+
+  method check_ds_server_status.
+    try.
+        clear rv_running.
+
+        data(lo_rest_client) = create_rest_client(
+                                 exporting
+                                   iv_api_endpoint_url = mc_api_endpoint_url-status ).
+
+        if lo_rest_client is bound.
+          try.
+              lo_rest_client->if_rest_client~get( ).
+            catch cx_rest_client_exception into data(lox_rest_client).
+              add_message( exporting iv_text = conv #( lox_rest_client->get_text( ) ) ).
+          endtry.
+
+          data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
+
+          if lo_response is bound.
+            data(lv_status_code) = lo_response->get_header_field(
+                                     exporting
+                                       iv_name = if_http_header_fields_sap=>status_code ).
+
+            case lv_status_code.
+              when mc_status_code-ok.
+                data:
+                  begin of ls_server_status,
+                    message type string,
+                    status  type string,
+                    errcode type string,
+                  end of ls_server_status.
+
+                data(lv_response_string) = lo_response->get_string_data( ).
+
+                clear ls_server_status.
+                /ui2/cl_json=>deserialize(
+                  exporting
+                    json             = lv_response_string                       " JSON string
+                    pretty_name      = /ui2/cl_json=>pretty_mode-low_case       " Pretty Print property names
+                  changing
+                    data             = ls_server_status ).                      " Data to serialize
+
+                rv_running = boolc( ls_server_status-status = '0' ).
+              when mc_status_code-internal_server_error.
+                rv_running = abap_false.
+              when others.
+            endcase.
+
+            data(lv_response_ts) = lo_response->get_header_field(
+                                     exporting
+                                       iv_name = if_http_header_fields=>date ).
+
+            if lv_response_ts is not initial.
+              lv_response_ts = condense( lv_response_ts ).
+              mv_header_ts = lv_response_ts.
+            endif.
+          endif.
+
+          " close the rest client - also closes the http client
+          lo_rest_client->if_rest_client~close( ).
+        endif.
+
+        mv_running = rv_running.
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
@@ -234,74 +303,6 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
-  method get_ds_server_status.
-    try.
-        clear rv_running.
-
-        data(lo_rest_client) = create_rest_client(
-                                 exporting
-                                   iv_api_endpoint_url = mc_api_endpoint_url-status ).
-
-        if lo_rest_client is bound.
-          try.
-              lo_rest_client->if_rest_client~get( ).
-            catch cx_rest_client_exception into data(lox_rest_client).
-              add_message( exporting iv_text = conv #( lox_rest_client->get_text( ) ) ).
-          endtry.
-
-          data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
-
-          if lo_response is bound.
-            data(lv_status_code) = lo_response->get_header_field(
-                                     exporting
-                                       iv_name = if_http_header_fields_sap=>status_code ).
-
-            case lv_status_code.
-              when mc_status_code-ok.
-                data:
-                  begin of ls_server_status,
-                    message type string,
-                    status  type string,
-                    errcode type string,
-                  end of ls_server_status.
-
-                data(lv_response_string) = lo_response->get_string_data( ).
-
-                clear ls_server_status.
-                /ui2/cl_json=>deserialize(
-                  exporting
-                    json             = lv_response_string                       " JSON string
-                    pretty_name      = /ui2/cl_json=>pretty_mode-low_case       " Pretty Print property names
-                  changing
-                    data             = ls_server_status ).                      " Data to serialize
-
-                rv_running = boolc( ls_server_status-status = '0' ).
-              when mc_status_code-internal_server_error.
-                rv_running = abap_false.
-              when others.
-            endcase.
-
-            data(lv_response_ts) = lo_response->get_header_field(
-                                     exporting
-                                       iv_name = if_http_header_fields=>date ).
-
-            if lv_response_ts is not initial.
-              lv_response_ts = condense( lv_response_ts ).
-              mv_header_ts = lv_response_ts.
-            endif.
-          endif.
-
-          " close the rest client - also closes the http client
-          lo_rest_client->if_rest_client~close( ).
-        endif.
-
-        mv_running = rv_running.
-      catch cx_root into data(lox_root).
-        add_message( exporting iox_exception = lox_root ).
-    endtry.
-  endmethod.
-
-
   method get_messages.
     try.
         clear rt_message.
@@ -313,6 +314,23 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
+  endmethod.
+
+
+  method get_num_of_pdf_pages.
+    clear rv_num_of_pages.
+
+    data(lv_string) = cl_bcs_convert=>xstring_to_string(
+                        exporting
+                          iv_xstr = iv_pdf_binary_data
+                          iv_cp   = '4110' ).
+
+    find all occurrences of '/Count' in lv_string results data(lt_count).
+
+    rv_num_of_pages = reduce #( init pages = 0   " to calculate the number of pages in the smartform
+                                for ls in it_smartf_otf_data
+                                  where ( tdprintcom = 'EP' )
+                                next pages = pages + 1 ).
   endmethod.
 
 
@@ -396,7 +414,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     try.
         cleanup( ).
 
-        if get_ds_server_status( ).
+        if check_ds_server_status( ).
           get_timestamp( ).
           get_pfxid( ).
           get_pfxpwd( ).
@@ -466,12 +484,12 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                 if lv_unsigned_pdf is not initial.
                   " call corresponding API based on API type
                   case iv_api_type.
-                    when mc_api_type-multipart_api.
+                    when mc_api_type-multipart.
                       rv_signed_pdf_binary_data = sign_multipart(
                                                     exporting
                                                       is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
                                                       iv_pdf_binary_data = lv_unsigned_pdf ).      " Un-Signed PDF binary data
-                    when mc_api_type-base64_api.
+                    when mc_api_type-base64.
                       rv_signed_pdf_binary_data = sign_base64(
                                                     exporting
                                                       is_ds_parameters   = ls_ds_parameters_int
