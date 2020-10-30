@@ -33,8 +33,8 @@ class zcl_truecopy_ds_api definition
     constants:
       begin of mc_api_endpoint_url,
         multipart type string value 'https://indofil.truecopy.in:443/ws/v1/signpdf',
-        base64    type string value 'https://indofil.truecopy.in:443/ws/v1/status',
-        status    type string value 'https://indofil.truecopy.in:443/ws/v1/signstructdataRetB64',
+        base64    type string value 'https://indofil.truecopy.in:443/ws/v1/signstructdataRetB64',
+        status    type string value 'https://indofil.truecopy.in:443/ws/v1/status',
       end of mc_api_endpoint_url.
 
     methods sign
@@ -109,6 +109,7 @@ private section.
     returning
       value(RO_REST_CLIENT) type ref to CL_REST_HTTP_CLIENT .
   methods CLEANUP .
+  methods INITIALIZE .
 ENDCLASS.
 
 
@@ -126,8 +127,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
         if iv_text is not initial.
           data(lv_text) = iv_text.
-          lv_text = |{ lv_method_name } - { lv_text }|.
-          append conv #( lv_text ) to mt_message.
+          append conv #( |{ lv_method_name } - { lv_text }| ) to mt_message.
         endif.
 
         if is_symsg is not initial.
@@ -138,15 +138,19 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
           ls_symsg-msgty = 'E'.
 
+          clear lv_text.
           message id ls_symsg-msgid type ls_symsg-msgty number ls_symsg-msgno
             with ls_symsg-msgv1 ls_symsg-msgv2 ls_symsg-msgv3 ls_symsg-msgv4
             into lv_text.
 
-          add_message( exporting iv_text = lv_text ).
+          append conv #( |{ lv_method_name } - { lv_text }| ) to mt_message.
         endif.
 
         if iox_exception is bound.
-          add_message( exporting iv_text = conv #( iox_exception->get_text( ) ) ).
+          clear lv_text.
+          lv_text = iox_exception->get_text( ).
+
+          append conv #( |{ lv_method_name } - { lv_text }| ) to mt_message.
         endif.
 
         clear rt_message.
@@ -173,14 +177,6 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method constructor.
     try.
         cleanup( ).
-
-        if get_ds_server_status( ).
-          get_timestamp( ).
-          get_pfxid( ).
-          get_pfxpwd( ).
-          get_apikey( ).
-          get_checksum( ).
-        endif.
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
@@ -396,11 +392,30 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
+  method initialize.
+    try.
+        cleanup( ).
+
+        if get_ds_server_status( ).
+          get_timestamp( ).
+          get_pfxid( ).
+          get_pfxpwd( ).
+          get_apikey( ).
+          get_checksum( ).
+        endif.
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
+  endmethod.
+
+
   method sign.
     try.
         clear:
           et_message,
           rv_signed_pdf_binary_data.
+
+        initialize( ).
 
         " DS server must be running
         if mv_running = abap_true.
@@ -521,9 +536,118 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method sign_base64.
-    data(lv_pdf_base64) = cl_http_utility=>encode_x_base64(
-                            exporting
-                              unencoded = iv_pdf_binary_data ).
+    try.
+        clear rv_signed_pdf_binary_data.
+
+        if iv_pdf_binary_data is not initial and is_ds_parameters-sign_loc is not initial.
+          data(lo_rest_client) = create_rest_client(
+                                   exporting
+                                     iv_api_endpoint_url = mc_api_endpoint_url-base64 ).
+
+          if lo_rest_client is bound.
+            " get the rest request object from the rest client
+            data(lo_request) = lo_rest_client->if_rest_client~create_request_entity( ).
+
+            if lo_request is bound.
+              " set the content type as multipart form data
+              lo_request->set_content_type(
+                exporting
+                  iv_media_type = if_rest_media_type=>gc_appl_json ).
+
+              data:
+                begin of ls_request,
+                  pfxid          type string,
+                  pfxpwd         type string,
+                  timestamp      type string,
+                  cs             type string,
+                  filename       type string,
+                  signloc        type string,
+                  signannotation type string,
+                  filepwd        type string,
+                  accessid       type string,
+                  contents       type string,
+                end of ls_request.
+
+              clear ls_request.
+              ls_request = value #( pfxid     = mv_pfxid
+                                    pfxpwd    = mv_pfxpwd
+                                    timestamp = mv_timestamp
+                                    cs        = mv_checksum
+                                    filename  = |{ mv_checksum }.pdf|
+                                    signloc   = is_ds_parameters-sign_loc
+                                    signannotation = |{ cond #( when is_ds_parameters-approved_by is not initial
+                                                                then |Approved By:| ) }| &&
+                                                                     |{ is_ds_parameters-approved_by }|
+                                    filepwd   = ''
+                                    accessid  = ''
+                                    contents  = cl_http_utility=>encode_x_base64(
+                                                  exporting
+                                                    unencoded = iv_pdf_binary_data ) ).
+
+              if ls_request is not initial.
+                data(lv_request_json) = /ui2/cl_json=>serialize(
+                                          exporting
+                                            data = ls_request
+                                            pretty_name = /ui2/cl_json=>pretty_mode-low_case ).
+
+                lo_request->set_string_data( exporting iv_data = lv_request_json ).
+
+                " send recieve - auto sets header field 'method type' to "POST'
+                try.
+                    lo_rest_client->if_rest_client~post( exporting io_entity = cast #( lo_request ) ).
+                  catch cx_rest_client_exception into data(lox_rest_client).
+                    add_message( exporting iox_exception = lox_rest_client ).
+                endtry.
+
+                " get rest response oject from the rest client
+                data(lo_response) = lo_rest_client->if_rest_client~get_response_entity( ).
+
+                if lo_response is bound.
+                  data(lv_status_code) = lo_response->get_header_field(
+                                           exporting
+                                             iv_name = if_http_header_fields_sap=>status_code ).
+
+                  case lv_status_code.
+                    when mc_status_code-ok.  " OK
+                      data(lv_response_string) = lo_response->get_string_data( ).
+
+                      if lv_response_string is not initial.
+                        rv_signed_pdf_binary_data = cl_http_utility=>decode_x_base64(
+                                                      exporting
+                                                        encoded = lv_response_string ).
+                      endif.
+                    when mc_status_code-internal_server_error.  " Error
+                      data:
+                        begin of ls_error,
+                          message type string,
+                          status  type string,
+                        end of ls_error.
+
+                      lv_response_string = lo_response->get_string_data( ).
+
+                      " json to abap
+                      clear ls_error.
+                      /ui2/cl_json=>deserialize(
+                        exporting
+                          json             = lv_response_string                       " JSON string
+                          pretty_name      = /ui2/cl_json=>pretty_mode-low_case       " Pretty Print property names
+                        changing
+                          data             = ls_error ).                              " Data to serialize
+
+                      add_message( exporting iv_text = ls_error-message ).
+                    when others.
+                  endcase.
+                endif.
+              endif.
+            endif.
+
+            " close the rest client - also closes the http client
+            lo_rest_client->if_rest_client~close( ).
+          endif.
+        endif.
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
   endmethod.
 
 
@@ -570,9 +694,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                 lo_multipart_form_data->set_file(
                   exporting
                     iv_name     = conv #( 'uploadfile' )                                " Form Field Name
-                    iv_filename = conv #( |{ lo_multipart_form_data->get_form_field(
-                                               exporting
-                                                 iv_name = 'checksum' ) }.pdf| )        " File Name
+                    iv_filename = conv #( |{ mv_checksum }.pdf| )        " File Name
                     iv_type     = if_rest_media_type=>gc_appl_pdf                       " Content Type
                     iv_data     = iv_pdf_binary_data ).                                 " Data
 
