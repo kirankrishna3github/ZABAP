@@ -148,24 +148,28 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method constructor.
-    data lv_message type string.
+    try.
+        data lv_message type string.
 
-    clear:
-      mv_running,
-      mv_header_ts,
-      mv_timestamp,
-      mv_pfxid,
-      mv_pfxpwd,
-      mv_apikey,
-      mv_checksum.
+        clear:
+          mv_running,
+          mv_header_ts,
+          mv_timestamp,
+          mv_pfxid,
+          mv_pfxpwd,
+          mv_apikey,
+          mv_checksum.
 
-    if get_ds_server_status( ).
-      get_timestamp( ).
-      get_pfxid( ).
-      get_pfxpwd( ).
-      get_apikey( ).
-      get_checksum( ).
-    endif.
+        if get_ds_server_status( ).
+          get_timestamp( ).
+          get_pfxid( ).
+          get_pfxpwd( ).
+          get_apikey( ).
+          get_checksum( ).
+        endif.
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
   endmethod.
 
 
@@ -211,8 +215,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     endif.
 
     if lo_http_client is bound.
-      data(lo_rest_client) = new cl_rest_http_client(
-                                    io_http_client = lo_http_client ).
+      data(lo_rest_client) = new cl_rest_http_client( io_http_client = lo_http_client ).
 
       if lo_rest_client is bound.
         try.
@@ -263,17 +266,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           endif.
         endif.
 
-        " close the rest client
+        " close the rest client - also closes the http client
         lo_rest_client->if_rest_client~close( ).
-      endif.
-
-      " close the http client
-      lo_http_client->close(
-        exceptions
-          http_invalid_state = 1 " Invalid state
-          others             = 2 ).
-      if sy-subrc <> 0.
-        add_message( exporting is_symsg = corresponding #( sy ) ).
       endif.
     endif.
 
@@ -282,12 +276,16 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method get_messages.
-    clear rt_message.
+    try.
+        clear rt_message.
 
-    sort mt_message ascending as text.
-    delete adjacent duplicates from mt_message comparing all fields.
+        sort mt_message ascending as text.
+        delete adjacent duplicates from mt_message comparing all fields.
 
-    rt_message = mt_message.
+        rt_message = mt_message.
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
   endmethod.
 
 
@@ -314,179 +312,192 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method get_timestamp.
-    clear rv_timestamp.
+    try.
+        clear rv_timestamp.
 
-    if mv_header_ts is not initial.
-      try.
-          data(lv_month) = to_upper( mv_header_ts+8(3) ).
-          data(lv_gmt_date) = |{ mv_header_ts+12(4) }{ cond #( when lv_month = 'JAN' then '01'
-                                                                 when lv_month = 'FEB' then '02'
-                                                                 when lv_month = 'MAR' then '03'
-                                                                 when lv_month = 'APR' then '04'
-                                                                 when lv_month = 'MAY' then '05'
-                                                                 when lv_month = 'JUN' then '06'
-                                                                 when lv_month = 'JUL' then '07'
-                                                                 when lv_month = 'AUG' then '08'
-                                                                 when lv_month = 'SEP' then '09'
-                                                                 when lv_month = 'OCT' then '10'
-                                                                 when lv_month = 'NOV' then '11'
-                                                                 when lv_month = 'DEC' then '12' ) }{ mv_header_ts+5(2) }|.
+        if mv_header_ts is not initial.
+          try.
+              data(lv_month) = to_upper( mv_header_ts+8(3) ).
+              data(lv_gmt_date) = |{ mv_header_ts+12(4) }{ cond #( when lv_month = 'JAN' then '01'
+                                                                   when lv_month = 'FEB' then '02'
+                                                                   when lv_month = 'MAR' then '03'
+                                                                   when lv_month = 'APR' then '04'
+                                                                   when lv_month = 'MAY' then '05'
+                                                                   when lv_month = 'JUN' then '06'
+                                                                   when lv_month = 'JUL' then '07'
+                                                                   when lv_month = 'AUG' then '08'
+                                                                   when lv_month = 'SEP' then '09'
+                                                                   when lv_month = 'OCT' then '10'
+                                                                   when lv_month = 'NOV' then '11'
+                                                                   when lv_month = 'DEC' then '12' ) }{ mv_header_ts+5(2) }|.
 
-          data(lv_gmt_time) = |{ mv_header_ts+17(2) }{ mv_header_ts+20(2) }{ mv_header_ts+23(2) }|.
+              data(lv_gmt_time) = |{ mv_header_ts+17(2) }{ mv_header_ts+20(2) }{ mv_header_ts+23(2) }|.
 
-          data(lv_ts) = value timestampl( ).
-          data(lv_tz) = value ttzz-tzone( ).
+              data(lv_ts) = value timestampl( ).
+              data(lv_tz) = value ttzz-tzone( ).
 
-          convert date lv_gmt_date time lv_gmt_time into time stamp lv_ts time zone lv_tz.  " default utc
+              convert date lv_gmt_date time lv_gmt_time
+                into time stamp lv_ts time zone lv_tz.  " default utc
 
-          lv_tz = sy-zonlo.
-          convert time stamp lv_ts time zone lv_tz into date data(lv_date) time data(lv_time).
-        catch cx_sy_range_out_of_bounds ##no_handler.
+              lv_tz = sy-zonlo.
+              convert time stamp lv_ts time zone lv_tz
+                into date data(lv_date) time data(lv_time).
+            catch cx_sy_range_out_of_bounds ##no_handler.
+              lv_date = sy-datum.
+              lv_time = sy-uzeit.
+          endtry.
+        else.
           lv_date = sy-datum.
           lv_time = sy-uzeit.
-      endtry.
-    else.
-      lv_date = sy-datum.
-      lv_time = sy-uzeit.
-    endif.
+        endif.
 
-    rv_timestamp = mv_timestamp = condense( |{ lv_date+6(2) }{ lv_date+4(2) }| && |{ lv_date+0(4) }| &&
-                                            |{ lv_time+0(2) }:{ lv_time+2(2) }:{ lv_time+4(2) }| ).
+        rv_timestamp = mv_timestamp = condense( |{ lv_date+6(2) }{ lv_date+4(2) }{ lv_date+0(4) }| &&
+                                                |{ lv_time+0(2) }:{ lv_time+2(2) }:{ lv_time+4(2) }| ).
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
   endmethod.
 
 
   method sign.
-    data lv_message type string.
+    try.
+        data lv_message type string.
 
-    clear:
-      et_message,
-      rv_signed_pdf_binary_data.
+        clear:
+          et_message,
+          rv_signed_pdf_binary_data.
 
-    " DS server must be running
-    if mv_running = abap_false.
-      et_message = add_message( exporting is_symsg = value #( msgno = '005' ) ).
-      return.
-    endif.
+        " DS server must be running
+        if mv_running = abap_false.
+          et_message = add_message( exporting is_symsg = value #( msgno = '005' ) ).
+          return.
+        endif.
 
-    " at least one kind of pdf data must be supplied
-    if iv_pdf_binary_data is initial and it_smartf_otf_data is initial.
-      et_message = add_message( exporting is_symsg = value #( msgno = '001' ) ).
-      return.
-    endif.
+        " at least one kind of pdf data must be supplied
+        if iv_pdf_binary_data is initial and it_smartf_otf_data is initial.
+          et_message = add_message( exporting is_symsg = value #( msgno = '001' ) ).
+          return.
+        endif.
 
-    " only 1 kind of pdf data must be supplied
-    if ( iv_pdf_binary_data is not initial and it_smartf_otf_data is not initial ).
-      et_message = add_message( exporting is_symsg = value #( msgno = '002' ) ).
-      return.
-    endif.
+        " only 1 kind of pdf data must be supplied
+        if ( iv_pdf_binary_data is not initial and it_smartf_otf_data is not initial ).
+          et_message = add_message( exporting is_symsg = value #( msgno = '002' ) ).
+          return.
+        endif.
 
-    " check and format input parameters in api format
-    data(ls_ds_parameters) = is_ds_parameters.
+        " check and format input parameters in api format
+        data(ls_ds_parameters) = is_ds_parameters.
 
-    if ls_ds_parameters-sign_loc_p is initial.
-      ls_ds_parameters-sign_loc_p = '1'.
-    endif.
+        if ls_ds_parameters-sign_loc_p is initial.
+          ls_ds_parameters-sign_loc_p = '1'.
+        endif.
 
-    if ls_ds_parameters-sign_loc_x is initial or ls_ds_parameters-sign_loc_y is initial.
-      et_message = add_message( exporting is_symsg = value #( msgno = '004' ) ).
-      return.
-    endif.
+        if ls_ds_parameters-sign_loc_x is initial or ls_ds_parameters-sign_loc_y is initial.
+          et_message = add_message( exporting is_symsg = value #( msgno = '004' ) ).
+          return.
+        endif.
 
-    data(ls_ds_parameters_int) = value mty_ds_parameters_int(
-                                   sign_loc = |{ condense( ls_ds_parameters-sign_loc_p ) }| &&
-                                              |[{ condense( ls_ds_parameters-sign_loc_x ) }:| &&
-                                              |{ condense( ls_ds_parameters-sign_loc_y ) }]|
-                                   approved_by = condense( to_upper( ls_ds_parameters-approved_by ) ) ).
+        data(ls_ds_parameters_int) = value mty_ds_parameters_int(
+                                       sign_loc = |{ condense( ls_ds_parameters-sign_loc_p ) }| &&
+                                                  |[{ condense( ls_ds_parameters-sign_loc_x ) }:| &&
+                                                  |{ condense( ls_ds_parameters-sign_loc_y ) }]|
+                                       approved_by = condense( to_upper( ls_ds_parameters-approved_by ) ) ).
 
-    data(lv_pdf_content) = value xstring( ).
+        data(lv_pdf_content) = value xstring( ).
 
-    if iv_pdf_binary_data is not initial.
-      lv_pdf_content = iv_pdf_binary_data.
-    endif.
+        if iv_pdf_binary_data is not initial.
+          lv_pdf_content = iv_pdf_binary_data.
+        endif.
 
-    " convert otf to pdf binary format
-    if it_smartf_otf_data is not initial.
-      data: lv_pdf_size type sood-objlen,
+        " convert otf to pdf binary format
+        if it_smartf_otf_data is not initial.
+          data:
+            lv_pdf_size type sood-objlen,
             lt_pdf      type standard table of tline.
 
-      clear lt_pdf.
-      call function 'CONVERT_OTF'
-        exporting
-          format                = 'PDF'
-        importing
-          bin_file              = lv_pdf_content
-          bin_filesize          = lv_pdf_size
-        tables
-          otf                   = it_smartf_otf_data
-          lines                 = lt_pdf
-        exceptions
-          err_max_linewidth     = 1
-          err_format            = 2
-          err_conv_not_possible = 3
-          err_bad_otf           = 4
-          others                = 5.
-      if sy-subrc <> 0.
-        et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
-        return.
-      endif.
-
-      lv_pdf_size = condense( lv_pdf_size ).
-    endif.
-
-    if lv_pdf_content is not initial.
-      " call corresponding API based on API type
-      case iv_api_type.
-        when mc_api_type-multipart_api.
-          rv_signed_pdf_binary_data = sign_multipart(
-                                        exporting
-                                          is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
-                                          iv_pdf_binary_data = lv_pdf_content          " Un-Signed PDF binary data
-                                        importing
-                                          et_message         = et_message ).
-        when mc_api_type-base64_api.
-          rv_signed_pdf_binary_data = sign_base64(
-                                        exporting
-                                          is_ds_parameters   = ls_ds_parameters_int
-                                          iv_pdf_binary_data = iv_pdf_binary_data
-                                        importing
-                                          et_message         = et_message ).
-        when others.
-          et_message = add_message( exporting is_symsg = value #( msgno = '003' ) ).
-          return.
-      endcase.
-
-      if rv_signed_pdf_binary_data is not initial.
-        if iv_display = abap_true.
-          data(lt_pdf_binary) = cl_bcs_convert=>xstring_to_solix( exporting iv_xstring = rv_signed_pdf_binary_data ).
-
-          cl_gui_frontend_services=>show_document(
+          clear lt_pdf.
+          call function 'CONVERT_OTF'
             exporting
-              document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
-              mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
-              data_length           = xstrlen( rv_signed_pdf_binary_data )      " File Length
-              keep_file             = abap_true                                 " Keep Temporary File
+              format                = 'PDF'
             importing
-              temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
-            changing
-              document_data         = lt_pdf_binary  " Transfer table
+              bin_file              = lv_pdf_content
+              bin_filesize          = lv_pdf_size
+            tables
+              otf                   = it_smartf_otf_data
+              lines                 = lt_pdf
             exceptions
-              cntl_error            = 1              " Error when calling front-end control or internal error
-              error_no_gui          = 2              " No SAPGUI available (background mode)
-              bad_parameter         = 3              " Invalid input value
-              error_writing_data    = 4              " Error when downloading document content
-              error_starting_viewer = 5              " Cannot launch display application
-              unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
-              not_supported_by_gui  = 7              " Method not supported by client
-              access_denied         = 8              " Operation rejected by front end
-              no_authority          = 9              " Missing authority
-              others                = 10 ).
+              err_max_linewidth     = 1
+              err_format            = 2
+              err_conv_not_possible = 3
+              err_bad_otf           = 4
+              others                = 5.
           if sy-subrc <> 0.
             et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
             return.
           endif.
+
+          lv_pdf_size = condense( lv_pdf_size ).
         endif.
-      endif.
-    endif.
+
+        if lv_pdf_content is not initial.
+          " call corresponding API based on API type
+          case iv_api_type.
+            when mc_api_type-multipart_api.
+              rv_signed_pdf_binary_data = sign_multipart(
+                                            exporting
+                                              is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
+                                              iv_pdf_binary_data = lv_pdf_content          " Un-Signed PDF binary data
+                                            importing
+                                              et_message         = et_message ).
+            when mc_api_type-base64_api.
+              rv_signed_pdf_binary_data = sign_base64(
+                                            exporting
+                                              is_ds_parameters   = ls_ds_parameters_int
+                                              iv_pdf_binary_data = iv_pdf_binary_data
+                                            importing
+                                              et_message         = et_message ).
+            when others.
+              et_message = add_message( exporting is_symsg = value #( msgno = '003' ) ).
+              return.
+          endcase.
+
+          if rv_signed_pdf_binary_data is not initial.
+            if iv_display = abap_true.
+              data(lt_pdf_binary) = cl_bcs_convert=>xstring_to_solix(
+                                      exporting
+                                        iv_xstring = rv_signed_pdf_binary_data ).
+
+              cl_gui_frontend_services=>show_document(
+                exporting
+                  document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
+                  mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
+                  data_length           = xstrlen( rv_signed_pdf_binary_data )      " File Length
+                  keep_file             = abap_true                                 " Keep Temporary File
+                importing
+                  temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
+                changing
+                  document_data         = lt_pdf_binary  " Transfer table
+                exceptions
+                  cntl_error            = 1              " Error when calling front-end control or internal error
+                  error_no_gui          = 2              " No SAPGUI available (background mode)
+                  bad_parameter         = 3              " Invalid input value
+                  error_writing_data    = 4              " Error when downloading document content
+                  error_starting_viewer = 5              " Cannot launch display application
+                  unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
+                  not_supported_by_gui  = 7              " Method not supported by client
+                  access_denied         = 8              " Operation rejected by front end
+                  no_authority          = 9              " Missing authority
+                  others                = 10 ).
+              if sy-subrc <> 0.
+                et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
+                return.
+              endif.
+            endif.
+          endif.
+        endif.
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
   endmethod.
 
 
@@ -535,8 +546,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                     iv_media_type = if_rest_media_type=>gc_multipart_form_data ).
 
                 " use the multipart class to access easier/pre-written/reusable methods for setting form fields and file data
-                data(lo_multipart_form_data) = new cl_rest_multipart_form_data(
-                                                     io_entity = lo_request ).
+                data(lo_multipart_form_data) = new cl_rest_multipart_form_data( io_entity = lo_request ).
 
                 if lo_multipart_form_data is not initial.
                   " set form fields as per api doc
@@ -566,18 +576,13 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                       iv_data     = iv_pdf_binary_data ).                                 " Data
 
                   " write the form fields and pdf binary to the http request object
-                  lo_multipart_form_data->write_to(
-                    exporting
-                      io_entity = cast #( lo_request ) ).
+                  lo_multipart_form_data->write_to( exporting io_entity = cast #( lo_request ) ).
 
                   " send recieve - auto sets header field 'method type' to "POST'
                   try.
-                      lo_rest_client->if_rest_client~post(
-                        exporting
-                          io_entity = cast #( lo_request ) ).
+                      lo_rest_client->if_rest_client~post( exporting io_entity = cast #( lo_request ) ).
                     catch cx_rest_client_exception into data(lox_rest_client).
                       et_message = add_message( exporting iox_exception = lox_rest_client ).
-                      return.
                   endtry.
 
                   " get rest response oject from the rest client
@@ -620,21 +625,13 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                 endif.
               endif.
 
+              " close the rest client - also closes the http client
               lo_rest_client->if_rest_client~close( ).
-            endif.
-
-            lo_http_client->close(
-              exceptions
-                http_invalid_state = 1 " Invalid state
-                others             = 2 ).
-            if sy-subrc <> 0.
-              et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
             endif.
           endif.
         endif.
       catch cx_root into data(lox_root).
         et_message = add_message( exporting iox_exception = lox_root ).
-        return.
     endtry.
   endmethod.
 ENDCLASS.
