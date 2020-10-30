@@ -72,9 +72,7 @@ private section.
     exporting
       value(ET_MESSAGE) type MTTY_MESSAGE
     returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING
-    raising
-      ZCX_GENERIC .
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
   methods GET_TIMESTAMP
     returning
       value(RV_TIMESTAMP) type STRING .
@@ -100,6 +98,7 @@ private section.
       value(IOX_EXCEPTION) type ref to CX_ROOT optional
     returning
       value(RT_MESSAGE) type MTTY_MESSAGE .
+  methods CREATE_REST_CLIENT .
 ENDCLASS.
 
 
@@ -170,6 +169,10 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
+  method CREATE_REST_CLIENT.
+  endmethod.
+
+
   method get_apikey.
     clear rv_apikey.
     rv_apikey = mv_apikey = cond #( when zcl_helper=>is_development( )
@@ -204,7 +207,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         internal_error     = 3             " Internal Error (e.g. name too long)
         others             = 4 ).
     if sy-subrc <> 0.
-      " error handling
+      add_message( exporting is_symsg = corresponding #( sy ) ).
     endif.
 
     if lo_http_client is bound.
@@ -270,7 +273,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           http_invalid_state = 1 " Invalid state
           others             = 2 ).
       if sy-subrc <> 0.
-        " error handling
+        add_message( exporting is_symsg = corresponding #( sy ) ).
       endif.
     endif.
 
@@ -361,18 +364,20 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
     " DS server must be running
     if mv_running = abap_false.
-      add_message( exporting is_symsg = value #( msgno = '005' ) ).
+      et_message = add_message( exporting is_symsg = value #( msgno = '005' ) ).
       return.
     endif.
 
     " at least one kind of pdf data must be supplied
     if iv_pdf_binary_data is initial and it_smartf_otf_data is initial.
-      add_message 'Z_DS' 'E' '001' '' '' '' '' et_message.
+      et_message = add_message( exporting is_symsg = value #( msgno = '001' ) ).
+      return.
     endif.
 
     " only 1 kind of pdf data must be supplied
     if ( iv_pdf_binary_data is not initial and it_smartf_otf_data is not initial ).
-      add_message 'Z_DS' 'E' '002' '' '' '' '' et_message.
+      et_message = add_message( exporting is_symsg = value #( msgno = '002' ) ).
+      return.
     endif.
 
     " check and format input parameters in api format
@@ -383,7 +388,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     endif.
 
     if ls_ds_parameters-sign_loc_x is initial or ls_ds_parameters-sign_loc_y is initial.
-      add_message 'Z_DS' 'E' '004' '' '' '' '' et_message.
+      et_message = add_message( exporting is_symsg = value #( msgno = '004' ) ).
+      return.
     endif.
 
     data(ls_ds_parameters_int) = value mty_ds_parameters_int(
@@ -420,8 +426,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           err_bad_otf           = 4
           others                = 5.
       if sy-subrc <> 0.
-        add_message sy-msgid 'E' sy-msgno
-          sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
+        et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
+        return.
       endif.
 
       lv_pdf_size = condense( lv_pdf_size ).
@@ -445,7 +451,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                         importing
                                           et_message         = et_message ).
         when others.
-          add_message 'Z_DS' 'E' '003' '' '' '' '' et_message.
+          et_message = add_message( exporting is_symsg = value #( msgno = '003' ) ).
+          return.
       endcase.
 
       if rv_signed_pdf_binary_data is not initial.
@@ -474,8 +481,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
               no_authority          = 9              " Missing authority
               others                = 10 ).
           if sy-subrc <> 0.
-            add_message sy-msgid 'E' sy-msgno
-              sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
+            et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
+            return.
           endif.
         endif.
       endif.
@@ -508,8 +515,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
               internal_error     = 3             " Internal Error (e.g. name too long)
               others             = 4 ).
           if sy-subrc <> 0.
-            add_message sy-msgid 'E' sy-msgno
-              sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
+            et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
+            return.
           endif.
 
           if lo_http_client is bound.
@@ -569,8 +576,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                         exporting
                           io_entity = cast #( lo_request ) ).
                     catch cx_rest_client_exception into data(lox_rest_client).
-                      data(lv_exc_text) = lox_rest_client->get_text( ).
-                      add_message 'Z_DS' 'E' '000' lv_exc_text '' '' '' et_message.
+                      et_message = add_message( exporting iox_exception = lox_rest_client ).
+                      return.
                   endtry.
 
                   " get rest response oject from the rest client
@@ -598,6 +605,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
                       lv_response_string = lo_response->get_string_data( ).
 
+                      " json to abap
                       clear ls_error.
                       /ui2/cl_json=>deserialize(
                         exporting
@@ -606,7 +614,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                         changing
                           data             = ls_error ).                              " Data to serialize
 
-                      add_message 'Z_DS' 'E' '000' ls_error-message '' '' '' et_message.
+                      et_message = add_message( exporting iv_text = ls_error-message ).
                     when others.
                   endcase.
                 endif.
@@ -620,14 +628,13 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                 http_invalid_state = 1 " Invalid state
                 others             = 2 ).
             if sy-subrc <> 0.
-              add_message sy-msgid 'E' sy-msgno
-                sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 et_message.
+              et_message = add_message( exporting is_symsg = corresponding #( sy ) ).
             endif.
           endif.
         endif.
       catch cx_root into data(lox_root).
-        lv_exc_text = lox_root->get_text( ).
-        add_message 'Z_DS' 'E' '000' lv_exc_text '' '' '' et_message.
+        et_message = add_message( exporting iox_exception = lox_root ).
+        return.
     endtry.
   endmethod.
 ENDCLASS.
