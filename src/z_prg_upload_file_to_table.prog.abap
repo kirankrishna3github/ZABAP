@@ -225,58 +225,63 @@ class lcl_app implementation.
 
           check lv_file_path is not initial and sy-subrc = 0.
 
-          if c_wdata eq abap_true.
-            data: lt type ref to data.
-            field-symbols: <lt> type standard table.
 
-            create data lt type table of (p_table).
-            if lt is bound.
-              assign lt->* to <lt>.
-              if <lt> is assigned.
+          data: lt type ref to data.
+          field-symbols: <lt> type standard table.
+
+          create data lt type table of (p_table).
+          if lt is bound.
+            assign lt->* to <lt>.
+            if <lt> is assigned.
+
+              if c_wdata eq abap_true.
                 try.
                     select * from (p_table) into corresponding fields of table <lt>.
+                  catch cx_sy_dynamic_osql_error into data(lox_dyn_sql).
+                    append initial line to <lt>.
+                endtry.
+              endif.
+              try.
+                  cl_salv_table=>factory(
+                    importing
+                      r_salv_table   = data(lo_alv)              " Basis Class Simple ALV Tables
+                    changing
+                      t_table        = <lt> ).
+
+                  data(lo_columns) = lo_alv->get_columns( ).
+                  if lo_columns is bound.
+                    data(lt_col) = lo_columns->get( ).
+
+                    if lt_col is not initial.
+                      loop at lt_col into data(ls_col).
+                        ls_col-r_column->set_long_text( exporting value = conv #( ls_col-columnname ) ).
+                        ls_col-r_column->set_medium_text( exporting value = conv #( ls_col-columnname ) ).
+                        ls_col-r_column->set_short_text( exporting value = conv #( ls_col-columnname ) ).
+                        clear ls_col.
+                      endloop.
+                    endif.
+
+                    lo_columns->set_optimize( exporting value = if_salv_c_bool_sap=>true ).
+                  endif.
+
+                  data(lv_xml) = lo_alv->to_xml(
+                       exporting
+                         xml_type    = if_salv_bs_xml=>c_type_xlsx
+                         xml_flavour = if_salv_bs_c_tt=>c_tt_xml_flavour_export ).
+
+                  if lv_xml is not initial.
 
                     try.
-                        cl_salv_table=>factory(
-                          importing
-                            r_salv_table   = data(lo_alv)              " Basis Class Simple ALV Tables
-                          changing
-                            t_table        = <lt> ).
-
-                        data(lo_columns) = lo_alv->get_columns( ).
-                        if lo_columns is bound.
-                          data(lt_col) = lo_columns->get( ).
-
-                          if lt_col is not initial.
-                            loop at lt_col into data(ls_col).
-                              ls_col-r_column->set_long_text( exporting value = conv #( ls_col-columnname ) ).
-                              ls_col-r_column->set_medium_text( exporting value = conv #( ls_col-columnname ) ).
-                              ls_col-r_column->set_short_text( exporting value = conv #( ls_col-columnname ) ).
-                              clear ls_col.
-                            endloop.
-                          endif.
-
-                          lo_columns->set_optimize( exporting value = if_salv_c_bool_sap=>true ).
-                        endif.
-
-                        data(lv_xml) = lo_alv->to_xml(
-                             exporting
-                               xml_type    = if_salv_bs_xml=>c_type_xlsx
-                               xml_flavour = if_salv_bs_c_tt=>c_tt_xml_flavour_export ).
-
-                        if lv_xml is not initial.
-
-                          try.
-                              zcl_helper=>write_file_to_path(
-                                exporting
-                                  iv_filepath    = lv_file_path    " Path of file to write to on frontend or app server
-                                  iv_file_length = xstrlen( lv_xml ) " Size of binary data
-                                  it_data        = cl_bcs_convert=>xstring_to_solix( exporting iv_xstring = lv_xml ) ).       " Binary Data
-                            catch zcx_generic ##no_handler. " Generic Exception Class
-                          endtry.
-                        endif.
-                      catch cx_salv_msg. " ALV: General Error Class with Message
+                        zcl_helper=>write_file_to_path(
+                          exporting
+                            iv_filepath    = lv_file_path    " Path of file to write to on frontend or app server
+                            iv_file_length = xstrlen( lv_xml ) " Size of binary data
+                            it_data        = cl_bcs_convert=>xstring_to_solix( exporting iv_xstring = lv_xml ) ).       " Binary Data
+                      catch zcx_generic ##no_handler. " Generic Exception Class
                     endtry.
+                  endif.
+                catch cx_salv_msg. " ALV: General Error Class with Message
+              endtry.
 *--------------------------------------------------------------------*
 *                    <gt_excel> = corresponding #( base ( <gt_excel> ) <lt> ).
 *
@@ -331,11 +336,9 @@ class lcl_app implementation.
 *                        iv_force_string     = abap_true             " Convert all values to string
 *                        iv_file_path        = lv_file_path ).       " Filepath on frontend or app server to download to...
 *--------------------------------------------------------------------*
-                  catch cx_sy_dynamic_osql_error into data(lox_dyn_sql).
-                endtry.
-              endif.
             endif.
           endif.
+
 
           if zcl_helper=>check_file_exists(
                exporting
