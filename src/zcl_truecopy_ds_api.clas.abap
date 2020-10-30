@@ -1,62 +1,64 @@
-class ZCL_TRUECOPY_DS_API definition
+class zcl_truecopy_ds_api definition
   public
   final
   create public .
 
-public section.
+  public section.
 
-  types:
-    begin of mty_ds_parameters,
+    types:
+      begin of mty_ds_parameters,
         sign_loc_p  type string,  " page no. on which the DS should be placed
         sign_loc_x  type string,  " no. of columns to the right from bottom left corner
         sign_loc_y  type string,  " no. of rows above the bottom left corner
         approved_by type string,
       end of mty_ds_parameters .
-  types:
-    begin of mty_ds_parameters_int,
+    types:
+      begin of mty_ds_parameters_int,
         sign_loc    type string,  " sign location in format sign_loc_p[sign_loc_x:sign_loc_y]
         approved_by type string,
       end of mty_ds_parameters_int .
-  types MTTY_MESSAGE type STRING_TABLE .
+    types mtty_message type string_table .
 
-  constants:
-    begin of mc_api_type,
+    constants:
+      begin of mc_api_type,
         multipart type c length 1 value '0',
         base64    type c length 1 value '1',
       end of mc_api_type .
-  constants:
-    begin of mc_status_code,
-        ok                    type string value '200',
-        internal_server_error type string value '500',
-      end of mc_status_code .
-  constants:
-    begin of mc_api_endpoint_url,
+    constants mc_file_filter_pdf type string value 'PDF files (*.pdf)|*.pdf' ##NO_TEXT.
+
+    methods sign
+      importing
+        value(is_ds_parameters)          type mty_ds_parameters
+        value(iv_pdf_binary_data)        type xstring optional
+        value(it_smartf_otf_data)        type tsfotf optional
+        value(iv_api_type)               type char1 default mc_api_type-multipart
+        value(iv_display)                type abap_bool default abap_true
+      exporting
+        value(et_message)                type mtty_message
+      returning
+        value(rv_signed_pdf_binary_data) type xstring .
+    methods constructor .
+    class-methods get_num_of_pdf_pages
+      importing
+        value(iv_pdf_binary_data) type xstring optional
+        value(it_smartf_otf_data) type tsfotf optional
+      returning
+        value(rv_num_of_pages)    type i .
+  protected section.
+  private section.
+
+    constants:
+      begin of mc_api_endpoint_url,
         multipart type string value 'https://indofil.truecopy.in:443/ws/v1/signpdf',
         base64    type string value 'https://indofil.truecopy.in:443/ws/v1/signstructdataRetB64',
         status    type string value 'https://indofil.truecopy.in:443/ws/v1/status',
       end of mc_api_endpoint_url .
-  constants MC_FILE_FILTER_PDF type STRING value 'PDF files (*.pdf)|*.pdf' ##NO_TEXT.
 
-  methods SIGN
-    importing
-      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS
-      value(IV_PDF_BINARY_DATA) type XSTRING optional
-      value(IT_SMARTF_OTF_DATA) type TSFOTF optional
-      value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART
-      value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
-    exporting
-      value(ET_MESSAGE) type MTTY_MESSAGE
-    returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
-  methods CONSTRUCTOR .
-  class-methods GET_NUM_OF_PDF_PAGES
-    importing
-      value(IV_PDF_BINARY_DATA) type XSTRING optional
-      value(IT_SMARTF_OTF_DATA) type TSFOTF optional
-    returning
-      value(RV_NUM_OF_PAGES) type I .
-  protected section.
-  private section.
+    constants:
+      begin of mc_status_code,
+        ok                    type string value '200',
+        internal_server_error type string value '500',
+      end of mc_status_code .
 
     data mv_running type abap_bool .
     data mv_header_ts type string .
@@ -320,17 +322,48 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method get_num_of_pdf_pages.
     clear rv_num_of_pages.
 
-    data(lv_string) = cl_bcs_convert=>xstring_to_string(
-                        exporting
-                          iv_xstr = iv_pdf_binary_data
-                          iv_cp   = '4110' ).
+    if iv_pdf_binary_data is not initial.
+      " https://answers.sap.com/answers/12029419/view.html
+      data(lv_pdf_utf_string) = cl_bcs_convert=>xstring_to_string(
+                                  exporting
+                                    iv_xstr = iv_pdf_binary_data
+                                    iv_cp   = '4110' ).   " utf encoding
 
-    find all occurrences of '/Count' in lv_string results data(lt_count).
+      find all occurrences of '/Count' in lv_pdf_utf_string results data(lt_match).
 
-    rv_num_of_pages = reduce #( init pages = 0   " to calculate the number of pages in the smartform
-                                for ls in it_smartf_otf_data
-                                  where ( tdprintcom = 'EP' )
-                                next pages = pages + 1 ).
+      data lt_count type table of i.
+
+      clear lt_count.
+
+      loop at lt_match into data(ls_match).
+        data(lv_offset) = ls_match-offset + ls_match-length + 1.
+        data(lv_count) = lv_pdf_utf_string+lv_offset(3).
+
+        replace all occurrences of regex '[^[:digit:]]' in lv_count with ''.
+
+        append lv_count to lt_count.
+
+        clear:
+          ls_match,
+          lv_offset,
+          lv_count.
+      endloop.
+
+      sort lt_count descending.
+      delete adjacent duplicates from lt_count comparing all fields.
+
+      try.
+          rv_num_of_pages = lt_count[ 1 ].
+        catch cx_sy_itab_line_not_found ##no_handler.
+      endtry.
+    endif.
+
+    if it_smartf_otf_data is not initial.
+      rv_num_of_pages = reduce #( init pages = 0   " to calculate the number of pages in the smartform
+                                  for ls in it_smartf_otf_data
+                                    where ( tdprintcom = 'EP' )
+                                  next pages = pages + 1 ).
+    endif.
   endmethod.
 
 
@@ -382,6 +415,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                                                    when lv_month = 'NOV' then '11'
                                                                    when lv_month = 'DEC' then '12' ) }{ mv_header_ts+5(2) }|.
 
+              " header ts sample format: Wed, 28 Oct 2020 17:26:10 GMT
               data(lv_gmt_time) = |{ mv_header_ts+17(2) }{ mv_header_ts+20(2) }{ mv_header_ts+23(2) }|.
 
               data(lv_ts) = value timestampl( ).
@@ -433,6 +467,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           et_message,
           rv_signed_pdf_binary_data.
 
+        constants lc_default_page type c length 1 value '1'.
+
         initialize( ).
 
         " DS server must be running
@@ -448,7 +484,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
               data(ls_ds_parameters) = is_ds_parameters.
 
               if ls_ds_parameters-sign_loc_p is initial.
-                ls_ds_parameters-sign_loc_p = '1'.
+                ls_ds_parameters-sign_loc_p = lc_default_page.
               endif.
 
               " x and y co-ordinates are mandatory to identify the location of placing the DS on the PDF
@@ -603,11 +639,13 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                                     unencoded = iv_pdf_binary_data ) ).
 
               if ls_request is not initial.
+                " abap to json
                 data(lv_request_json) = /ui2/cl_json=>serialize(
                                           exporting
                                             data = ls_request
                                             pretty_name = /ui2/cl_json=>pretty_mode-low_case ).
 
+                " set json payload
                 lo_request->set_string_data( exporting iv_data = lv_request_json ).
 
                 " send recieve - auto sets header field 'method type' to "POST'
