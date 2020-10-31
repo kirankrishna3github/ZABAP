@@ -1,49 +1,54 @@
-class zcl_truecopy_ds_api definition
+class ZCL_TRUECOPY_DS_API definition
   public
   final
   create public .
 
-  public section.
+public section.
 
-    types:
-      begin of mty_ds_parameters,
+  types:
+    begin of mty_ds_parameters,
         sign_loc_p  type string,  " page no. on which the DS should be placed
         sign_loc_x  type string,  " no. of columns to the right from bottom left corner
         sign_loc_y  type string,  " no. of rows above the bottom left corner
         approved_by type string,
       end of mty_ds_parameters .
-    types:
-      begin of mty_ds_parameters_int,
+  types:
+    begin of mty_ds_parameters_int,
         sign_loc    type string,  " sign location in format sign_loc_p[sign_loc_x:sign_loc_y]
         approved_by type string,
       end of mty_ds_parameters_int .
-    types mtty_message type string_table .
+  types MTTY_MESSAGE type STRING_TABLE .
 
-    constants:
-      begin of mc_api_type,
+  constants:
+    begin of mc_api_type,
         multipart type c length 1 value '0',
         base64    type c length 1 value '1',
       end of mc_api_type .
-    constants mc_file_filter_pdf type string value 'PDF files (*.pdf)|*.pdf' ##NO_TEXT.
+  constants MC_FILE_FILTER_PDF type STRING value 'PDF files (*.pdf)|*.pdf' ##NO_TEXT.
 
-    methods sign
-      importing
-        value(is_ds_parameters)          type mty_ds_parameters
-        value(iv_pdf_binary_data)        type xstring optional
-        value(it_smartf_otf_data)        type tsfotf optional
-        value(iv_api_type)               type char1 default mc_api_type-multipart
-        value(iv_display)                type abap_bool default abap_true
-      exporting
-        value(et_message)                type mtty_message
-      returning
-        value(rv_signed_pdf_binary_data) type xstring .
-    methods constructor .
-    class-methods get_num_of_pdf_pages
-      importing
-        value(iv_pdf_binary_data) type xstring optional
-        value(it_smartf_otf_data) type tsfotf optional
-      returning
-        value(rv_num_of_pages)    type i .
+  methods SIGN
+    importing
+      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS
+      value(IV_PDF_BINARY_DATA) type XSTRING optional
+      value(IT_SMARTF_OTF_DATA) type TSFOTF optional
+      value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART
+      value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
+    exporting
+      value(ET_MESSAGE) type MTTY_MESSAGE
+    returning
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
+  methods CONSTRUCTOR .
+  class-methods GET_NUM_OF_PDF_PAGES
+    importing
+      value(IV_PDF_BINARY_DATA) type XSTRING optional
+      value(IT_SMARTF_OTF_DATA) type TSFOTF optional
+    returning
+      value(RV_NUM_OF_PAGES) type I .
+  class-methods OTF_TO_PDF
+    importing
+      value(IT_SMARTF_OTF_DATA) type TSFOTF
+    returning
+      value(RV_PDF_BINARY) type XSTRING .
   protected section.
   private section.
 
@@ -461,6 +466,23 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
+  method otf_to_pdf.
+    if it_smartf_otf_data is not initial.
+      try.
+          cl_dpr_pdf_conversion_service=>convert_otf_2_pdf(
+            exporting
+              it_otf_data      = it_smartf_otf_data         " Data in OTF Form
+            importing
+              et_pdf_data      = data(lt_pdf)               " Data in PDF Format (Table)
+              ev_pdf_data      = rv_pdf_binary              " Data in PDF Format (XSTRING)
+              ev_pdf_data_size = data(lv_pdf_size) ).       " Size of PDF Data
+        catch cx_dpr_pdf_conversion_error into data(lox_pdf_conv_error). " Development Projects: Error When Converting From PDF Data
+          " Error handling
+      endtry.
+    endif.
+  endmethod.
+
+
   method sign.
     try.
         clear:
@@ -474,107 +496,82 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         " DS server must be running
         if mv_running = abap_true.
 
-          " at least one kind of pdf data must be supplied
-          if iv_pdf_binary_data is not initial or it_smartf_otf_data is not initial.
+          " pdf data must be supplied
+          if iv_pdf_binary_data is not initial.
 
-            " only 1 kind of pdf data must be supplied
-            if iv_pdf_binary_data is initial or it_smartf_otf_data is initial.
+            " check and format input parameters in api format
+            data(ls_ds_parameters) = is_ds_parameters.
 
-              " check and format input parameters in api format
-              data(ls_ds_parameters) = is_ds_parameters.
+            if ls_ds_parameters-sign_loc_p is initial.
+              ls_ds_parameters-sign_loc_p = lc_default_page.
+            endif.
 
-              if ls_ds_parameters-sign_loc_p is initial.
-                ls_ds_parameters-sign_loc_p = lc_default_page.
-              endif.
+            " x and y co-ordinates are mandatory to identify the location of placing the DS on the PDF
+            if ls_ds_parameters-sign_loc_x is not initial and ls_ds_parameters-sign_loc_y is not initial.
 
-              " x and y co-ordinates are mandatory to identify the location of placing the DS on the PDF
-              if ls_ds_parameters-sign_loc_x is not initial and ls_ds_parameters-sign_loc_y is not initial.
+              data(ls_ds_parameters_int) = value mty_ds_parameters_int(
+                                             sign_loc = |{ condense( ls_ds_parameters-sign_loc_p ) }| &&
+                                                        |[{ condense( ls_ds_parameters-sign_loc_x ) }:| &&
+                                                        |{ condense( ls_ds_parameters-sign_loc_y ) }]|
+                                             approved_by = condense( to_upper( ls_ds_parameters-approved_by ) ) ).
 
-                data(ls_ds_parameters_int) = value mty_ds_parameters_int(
-                                               sign_loc = |{ condense( ls_ds_parameters-sign_loc_p ) }| &&
-                                                          |[{ condense( ls_ds_parameters-sign_loc_x ) }:| &&
-                                                          |{ condense( ls_ds_parameters-sign_loc_y ) }]|
-                                               approved_by = condense( to_upper( ls_ds_parameters-approved_by ) ) ).
+              data(lv_unsigned_pdf) = iv_pdf_binary_data.
 
-                data(lv_unsigned_pdf) = value xstring( ).
+              if lv_unsigned_pdf is not initial.
+                " call corresponding API based on API type
+                case iv_api_type.
+                  when mc_api_type-multipart.
+                    rv_signed_pdf_binary_data = sign_multipart(
+                                                  exporting
+                                                    is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
+                                                    iv_pdf_binary_data = lv_unsigned_pdf ).      " Un-Signed PDF binary data
+                  when mc_api_type-base64.
+                    rv_signed_pdf_binary_data = sign_base64(
+                                                  exporting
+                                                    is_ds_parameters   = ls_ds_parameters_int
+                                                    iv_pdf_binary_data = lv_unsigned_pdf ).
+                  when others.
+                    add_message( exporting is_symsg = value #( msgno = '003' ) ).
+                endcase.
 
-                if iv_pdf_binary_data is not initial.
-                  lv_unsigned_pdf = iv_pdf_binary_data.
-                endif.
+                if rv_signed_pdf_binary_data is not initial.
+                  if iv_display = abap_true.
+                    data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
+                                            exporting
+                                              iv_xstring = rv_signed_pdf_binary_data ).
 
-                " convert otf to pdf binary format
-                if it_smartf_otf_data is not initial.
-                  try.
-                      cl_dpr_pdf_conversion_service=>convert_otf_2_pdf(
-                        exporting
-                          it_otf_data      = it_smartf_otf_data         " Data in OTF Form
-                        importing
-                          et_pdf_data      = data(lt_pdf)               " Data in PDF Format (Table)
-                          ev_pdf_data      = lv_unsigned_pdf            " Data in PDF Format (XSTRING)
-                          ev_pdf_data_size = data(lv_pdf_size) ).       " Size of PDF Data
-                    catch cx_dpr_pdf_conversion_error into data(lox_pdf_conv_error). " Development Projects: Error When Converting From PDF Data
-                      add_message( exporting iox_exception = lox_pdf_conv_error ).
-                  endtry.
-                endif.
-
-                if lv_unsigned_pdf is not initial.
-                  " call corresponding API based on API type
-                  case iv_api_type.
-                    when mc_api_type-multipart.
-                      rv_signed_pdf_binary_data = sign_multipart(
-                                                    exporting
-                                                      is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
-                                                      iv_pdf_binary_data = lv_unsigned_pdf ).      " Un-Signed PDF binary data
-                    when mc_api_type-base64.
-                      rv_signed_pdf_binary_data = sign_base64(
-                                                    exporting
-                                                      is_ds_parameters   = ls_ds_parameters_int
-                                                      iv_pdf_binary_data = lv_unsigned_pdf ).
-                    when others.
-                      add_message( exporting is_symsg = value #( msgno = '003' ) ).
-                  endcase.
-
-                  if rv_signed_pdf_binary_data is not initial.
-                    if iv_display = abap_true.
-                      data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
-                                              exporting
-                                                iv_xstring = rv_signed_pdf_binary_data ).
-
-                      cl_gui_frontend_services=>show_document(
-                        exporting
-                          document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
-                          mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
-                          data_length           = xstrlen( rv_signed_pdf_binary_data )      " File Length
-                          keep_file             = abap_true                                 " Keep Temporary File
-                        importing
-                          temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
-                        changing
-                          document_data         = lt_signed_pdf  " Transfer table
-                        exceptions
-                          cntl_error            = 1              " Error when calling front-end control or internal error
-                          error_no_gui          = 2              " No SAPGUI available (background mode)
-                          bad_parameter         = 3              " Invalid input value
-                          error_writing_data    = 4              " Error when downloading document content
-                          error_starting_viewer = 5              " Cannot launch display application
-                          unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
-                          not_supported_by_gui  = 7              " Method not supported by client
-                          access_denied         = 8              " Operation rejected by front end
-                          no_authority          = 9              " Missing authority
-                          others                = 10 ).
-                      if sy-subrc <> 0.
-                        add_message( exporting is_symsg = corresponding #( sy ) ).
-                      endif.
+                    cl_gui_frontend_services=>show_document(
+                      exporting
+                        document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
+                        mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
+                        data_length           = xstrlen( rv_signed_pdf_binary_data )      " File Length
+                        keep_file             = abap_true                                 " Keep Temporary File
+                      importing
+                        temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
+                      changing
+                        document_data         = lt_signed_pdf  " Transfer table
+                      exceptions
+                        cntl_error            = 1              " Error when calling front-end control or internal error
+                        error_no_gui          = 2              " No SAPGUI available (background mode)
+                        bad_parameter         = 3              " Invalid input value
+                        error_writing_data    = 4              " Error when downloading document content
+                        error_starting_viewer = 5              " Cannot launch display application
+                        unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
+                        not_supported_by_gui  = 7              " Method not supported by client
+                        access_denied         = 8              " Operation rejected by front end
+                        no_authority          = 9              " Missing authority
+                        others                = 10 ).
+                    if sy-subrc <> 0.
+                      add_message( exporting is_symsg = corresponding #( sy ) ).
                     endif.
                   endif.
                 endif.
-              else.
-                add_message( exporting is_symsg = value #( msgno = '004' ) ).
               endif.
             else.
-              add_message( exporting is_symsg = value #( msgno = '002' ) ).
+              add_message( exporting is_symsg = value #( msgno = '004' ) ).
             endif.
           else.
-            add_message( exporting is_symsg = value #( msgno = '001' ) ).
+            add_message( exporting is_symsg = value #( msgno = '002' ) ).
           endif.
         else.
           add_message( exporting is_symsg = value #( msgno = '005' ) ).

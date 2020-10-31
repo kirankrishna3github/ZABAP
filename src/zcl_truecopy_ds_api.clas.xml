@@ -166,6 +166,12 @@
     </SEOCOMPOTX>
     <SEOCOMPOTX>
      <CLSNAME>ZCL_TRUECOPY_DS_API</CLSNAME>
+     <CMPNAME>OTF_TO_PDF</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Convert smartform OTF data to PDF binary</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_TRUECOPY_DS_API</CLSNAME>
      <CMPNAME>SIGN</CMPNAME>
      <LANGU>E</LANGU>
      <DESCRIPT>Call the digital signature API to digitally sign the doc</DESCRIPT>
