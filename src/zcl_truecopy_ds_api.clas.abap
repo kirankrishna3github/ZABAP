@@ -29,18 +29,17 @@ public section.
   methods SIGN
     importing
       value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS
-      value(IV_PDF_BINARY_DATA) type XSTRING optional
-      value(IT_SMARTF_OTF_DATA) type TSFOTF optional
+      value(IV_PDF_BINARY) type XSTRING optional
       value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART
       value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
     exporting
       value(ET_MESSAGE) type MTTY_MESSAGE
     returning
-      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
+      value(RV_SIGNED_PDF_BINARY) type XSTRING .
   methods CONSTRUCTOR .
   class-methods GET_NUM_OF_PDF_PAGES
     importing
-      value(IV_PDF_BINARY_DATA) type XSTRING optional
+      value(IV_PDF_BINARY) type XSTRING optional
       value(IT_SMARTF_OTF_DATA) type TSFOTF optional
     returning
       value(RV_NUM_OF_PAGES) type I .
@@ -50,77 +49,79 @@ public section.
     returning
       value(RV_PDF_BINARY) type XSTRING .
   protected section.
-  private section.
+private section.
 
-    constants:
-      begin of mc_api_endpoint_url,
+  constants:
+    begin of mc_api_endpoint_url,
         multipart type string value 'https://indofil.truecopy.in:443/ws/v1/signpdf',
         base64    type string value 'https://indofil.truecopy.in:443/ws/v1/signstructdataRetB64',
         status    type string value 'https://indofil.truecopy.in:443/ws/v1/status',
       end of mc_api_endpoint_url .
-
-    constants:
-      begin of mc_status_code,
+  constants:
+    begin of mc_status_code,
         ok                    type string value '200',
         internal_server_error type string value '500',
       end of mc_status_code .
+  data MV_RUNNING type ABAP_BOOL .
+  data MV_HEADER_TS type STRING .
+  data MV_TIMESTAMP type STRING .
+  data MV_PFXID type STRING .
+  data MV_PFXPWD type STRING .
+  data MV_APIKEY type STRING .
+  data MV_CHECKSUM type STRING .
+  data MT_MESSAGE type STRING_TABLE .
 
-    data mv_running type abap_bool .
-    data mv_header_ts type string .
-    data mv_timestamp type string .
-    data mv_pfxid type string .
-    data mv_pfxpwd type string .
-    data mv_apikey type string .
-    data mv_checksum type string .
-    data mt_message type string_table .
-
-    methods get_messages
-      returning
-        value(rt_message) type mtty_message .
-    methods sign_multipart
-      importing
-        value(is_ds_parameters)          type mty_ds_parameters_int
-        value(iv_pdf_binary_data)        type xstring
-      returning
-        value(rv_signed_pdf_binary_data) type xstring .
-    methods sign_base64
-      importing
-        value(is_ds_parameters)          type mty_ds_parameters_int
-        value(iv_pdf_binary_data)        type xstring
-      exporting
-        value(et_message)                type mtty_message
-      returning
-        value(rv_signed_pdf_binary_data) type xstring .
-    methods get_timestamp
-      returning
-        value(rv_timestamp) type string .
-    methods get_pfxid
-      returning
-        value(rv_pfxid) type string .
-    methods get_pfxpwd
-      returning
-        value(rv_pfxpwd) type string .
-    methods get_apikey
-      returning
-        value(rv_apikey) type string .
-    methods get_checksum
-      returning
-        value(rv_checksum) type string .
-    methods check_ds_server_status
-      returning
-        value(rv_running) type abap_bool .
-    methods add_message
-      importing
-        value(iv_text)       type string optional
-        value(is_symsg)      type symsg optional
-        value(iox_exception) type ref to cx_root optional .
-    methods create_rest_client
-      importing
-        value(iv_api_endpoint_url) type string
-      returning
-        value(ro_rest_client)      type ref to cl_rest_http_client .
-    methods cleanup .
-    methods initialize .
+  methods GET_MESSAGES
+    returning
+      value(RT_MESSAGE) type MTTY_MESSAGE .
+  methods SIGN_MULTIPART
+    importing
+      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
+      value(IV_PDF_BINARY_DATA) type XSTRING
+    returning
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
+  methods SIGN_BASE64
+    importing
+      value(IS_DS_PARAMETERS) type MTY_DS_PARAMETERS_INT
+      value(IV_PDF_BINARY_DATA) type XSTRING
+    exporting
+      value(ET_MESSAGE) type MTTY_MESSAGE
+    returning
+      value(RV_SIGNED_PDF_BINARY_DATA) type XSTRING .
+  methods GET_TIMESTAMP
+    returning
+      value(RV_TIMESTAMP) type STRING .
+  methods GET_PFXID
+    returning
+      value(RV_PFXID) type STRING .
+  methods GET_PFXPWD
+    returning
+      value(RV_PFXPWD) type STRING .
+  methods GET_APIKEY
+    returning
+      value(RV_APIKEY) type STRING .
+  methods GET_CHECKSUM
+    returning
+      value(RV_CHECKSUM) type STRING .
+  methods CHECK_DS_SERVER_STATUS
+    returning
+      value(RV_RUNNING) type ABAP_BOOL .
+  methods ADD_MESSAGE
+    importing
+      value(IV_TEXT) type STRING optional
+      value(IS_SYMSG) type SYMSG optional
+      value(IOX_EXCEPTION) type ref to CX_ROOT optional .
+  methods CREATE_REST_CLIENT
+    importing
+      value(IV_API_ENDPOINT_URL) type STRING
+    returning
+      value(RO_REST_CLIENT) type ref to CL_REST_HTTP_CLIENT .
+  methods CLEANUP .
+  methods INITIALIZE .
+  methods DISPLAY_PDF
+    importing
+      value(IV_PDF_BINARY) type XSTRING
+      value(IV_SYSTEM_VIEWER) type ABAP_BOOL default ABAP_FALSE .
 ENDCLASS.
 
 
@@ -283,6 +284,46 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
+  method display_pdf.
+    if iv_pdf_binary is not initial.
+      if iv_system_viewer = abap_true.
+        data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
+                                exporting
+                                  iv_xstring = iv_pdf_binary ).
+
+        cl_gui_frontend_services=>show_document(
+          exporting
+            document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
+            mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
+            data_length           = xstrlen( iv_pdf_binary )                  " File Length
+            keep_file             = abap_true                                 " Keep Temporary File
+          importing
+            temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
+          changing
+            document_data         = lt_signed_pdf  " Transfer table
+          exceptions
+            cntl_error            = 1              " Error when calling front-end control or internal error
+            error_no_gui          = 2              " No SAPGUI available (background mode)
+            bad_parameter         = 3              " Invalid input value
+            error_writing_data    = 4              " Error when downloading document content
+            error_starting_viewer = 5              " Cannot launch display application
+            unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
+            not_supported_by_gui  = 7              " Method not supported by client
+            access_denied         = 8              " Operation rejected by front end
+            no_authority          = 9              " Missing authority
+            others                = 10 ).
+        if sy-subrc <> 0.
+          add_message( exporting is_symsg = corresponding #( sy ) ).
+        endif.
+      else.
+        call function 'ZFM_PDF_VIEWER'
+          exporting
+            iv_pdf_binary = iv_pdf_binary.  " PDF content in binary format
+      endif.
+    endif.
+  endmethod.
+
+
   method get_apikey.
     try.
         clear rv_apikey.
@@ -327,11 +368,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method get_num_of_pdf_pages.
     clear rv_num_of_pages.
 
-    if iv_pdf_binary_data is not initial.
+    if iv_pdf_binary is not initial.
       " https://answers.sap.com/answers/12029419/view.html
       data(lv_pdf_utf_string) = cl_bcs_convert=>xstring_to_string(
                                   exporting
-                                    iv_xstr = iv_pdf_binary_data
+                                    iv_xstr = iv_pdf_binary
                                     iv_cp   = '4110' ).   " utf encoding
 
       find all occurrences of '/Count' in lv_pdf_utf_string results data(lt_match).
@@ -487,7 +528,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     try.
         clear:
           et_message,
-          rv_signed_pdf_binary_data.
+          rv_signed_pdf_binary.
 
         constants lc_default_page type c length 1 value '1'.
 
@@ -497,7 +538,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         if mv_running = abap_true.
 
           " pdf data must be supplied
-          if iv_pdf_binary_data is not initial.
+          if iv_pdf_binary is not initial.
 
             " check and format input parameters in api format
             data(ls_ds_parameters) = is_ds_parameters.
@@ -515,55 +556,30 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                                         |{ condense( ls_ds_parameters-sign_loc_y ) }]|
                                              approved_by = condense( to_upper( ls_ds_parameters-approved_by ) ) ).
 
-              data(lv_unsigned_pdf) = iv_pdf_binary_data.
+              data(lv_unsigned_pdf) = iv_pdf_binary.
 
               if lv_unsigned_pdf is not initial.
                 " call corresponding API based on API type
                 case iv_api_type.
                   when mc_api_type-multipart.
-                    rv_signed_pdf_binary_data = sign_multipart(
-                                                  exporting
-                                                    is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
-                                                    iv_pdf_binary_data = lv_unsigned_pdf ).      " Un-Signed PDF binary data
+                    rv_signed_pdf_binary = sign_multipart(
+                                             exporting
+                                               is_ds_parameters   = ls_ds_parameters_int    " DS mandatory parameters
+                                               iv_pdf_binary_data = lv_unsigned_pdf ).      " Un-Signed PDF binary data
                   when mc_api_type-base64.
-                    rv_signed_pdf_binary_data = sign_base64(
-                                                  exporting
-                                                    is_ds_parameters   = ls_ds_parameters_int
-                                                    iv_pdf_binary_data = lv_unsigned_pdf ).
+                    rv_signed_pdf_binary = sign_base64(
+                                             exporting
+                                               is_ds_parameters   = ls_ds_parameters_int
+                                               iv_pdf_binary_data = lv_unsigned_pdf ).
                   when others.
                     add_message( exporting is_symsg = value #( msgno = '003' ) ).
                 endcase.
 
-                if rv_signed_pdf_binary_data is not initial.
+                if rv_signed_pdf_binary is not initial.
                   if iv_display = abap_true.
-                    data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
-                                            exporting
-                                              iv_xstring = rv_signed_pdf_binary_data ).
-
-                    cl_gui_frontend_services=>show_document(
+                    display_pdf(
                       exporting
-                        document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
-                        mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
-                        data_length           = xstrlen( rv_signed_pdf_binary_data )      " File Length
-                        keep_file             = abap_true                                 " Keep Temporary File
-                      importing
-                        temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
-                      changing
-                        document_data         = lt_signed_pdf  " Transfer table
-                      exceptions
-                        cntl_error            = 1              " Error when calling front-end control or internal error
-                        error_no_gui          = 2              " No SAPGUI available (background mode)
-                        bad_parameter         = 3              " Invalid input value
-                        error_writing_data    = 4              " Error when downloading document content
-                        error_starting_viewer = 5              " Cannot launch display application
-                        unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
-                        not_supported_by_gui  = 7              " Method not supported by client
-                        access_denied         = 8              " Operation rejected by front end
-                        no_authority          = 9              " Missing authority
-                        others                = 10 ).
-                    if sy-subrc <> 0.
-                      add_message( exporting is_symsg = corresponding #( sy ) ).
-                    endif.
+                        iv_pdf_binary = rv_signed_pdf_binary ). " Signed PDF binary
                   endif.
                 endif.
               endif.
@@ -571,7 +587,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
               add_message( exporting is_symsg = value #( msgno = '004' ) ).
             endif.
           else.
-            add_message( exporting is_symsg = value #( msgno = '002' ) ).
+            add_message( exporting is_symsg = value #( msgno = '001' ) ).
           endif.
         else.
           add_message( exporting is_symsg = value #( msgno = '005' ) ).

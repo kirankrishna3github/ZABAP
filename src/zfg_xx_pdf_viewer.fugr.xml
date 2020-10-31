@@ -183,7 +183,7 @@
     <TIT>
      <RSMPE_TITT>
       <CODE>PDF_VIEWER</CODE>
-      <TEXT>PDF Document Viewer (For print: Press Ctrl + P)</TEXT>
+      <TEXT>PDF Document Viewer (To print: Press Ctrl + P)</TEXT>
      </RSMPE_TITT>
     </TIT>
    </CUA>

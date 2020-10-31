@@ -15,16 +15,20 @@ form set_status.
 endform.
 
 form display_pdf.
-  data(lo_html_control) =
+  clear go_html_viewer.
+
+  data(lo_html_viewer) =
     new cl_gui_html_viewer( parent = cl_gui_custom_container=>default_screen ).
 
-  if lo_html_control is bound.
-    data(lv_alignment) = lo_html_control->align_at_left  +
-                         lo_html_control->align_at_right +
-                         lo_html_control->align_at_top   +
-                         lo_html_control->align_at_bottom.
+  if lo_html_viewer is bound.
+    go_html_viewer = lo_html_viewer.
 
-    lo_html_control->set_alignment(
+    data(lv_alignment) = lo_html_viewer->align_at_left  +
+                         lo_html_viewer->align_at_right +
+                         lo_html_viewer->align_at_top   +
+                         lo_html_viewer->align_at_bottom.
+
+    lo_html_viewer->set_alignment(
       exporting
         alignment         = lv_alignment " Alignment
       exceptions
@@ -42,7 +46,7 @@ form display_pdf.
 
     data lv_url type c length 2048.
 
-    lo_html_control->load_data(
+    lo_html_viewer->load_data(
       exporting
         url                    = 'smart.pdf'              " URL
         type                   = 'application'            " Type of a MIME Object
@@ -63,7 +67,7 @@ form display_pdf.
         with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
 
-    lo_html_control->show_data(
+    lo_html_viewer->show_data(
       exporting
         url                    = lv_url   " URL
       exceptions
@@ -72,6 +76,18 @@ form display_pdf.
         cnht_error_parameter   = 3     " Incorrect parameters
         dp_error_general       = 4     " Error in DP FM call
         others                 = 5 ).
+    if sy-subrc <> 0.
+      message id sy-msgid type sy-msgty number sy-msgno
+        with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    endif.
+
+    lo_html_viewer->set_focus(
+      exporting
+        control           = lo_html_viewer " Control
+      exceptions
+        cntl_error        = 1       " cntl_error
+        cntl_system_error = 2       " cntl_system_error
+        others            = 3 ).
     if sy-subrc <> 0.
       message id sy-msgid type sy-msgty number sy-msgno
         with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
@@ -91,9 +107,22 @@ form handler_ucomm.
     or sy-ucomm = 'EXIT'
     or sy-ucomm = 'CANC'.
 
+    if go_html_viewer is bound.
+      go_html_viewer->free(
+        exceptions
+          cntl_error        = 1 " CNTL_ERROR
+          cntl_system_error = 2 " CNTL_SYSTEM_ERROR
+          others            = 3 ).
+      if sy-subrc <> 0.
+        message id sy-msgid type sy-msgty number sy-msgno
+          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+      endif.
+
+      clear go_html_viewer.
+    endif.
+
     clear sy-ucomm.
     leave to screen 0.
-
   endif.
 
   clear sy-ucomm.

@@ -18,13 +18,13 @@
      <SPRSL>E</SPRSL>
      <ARBGB>Z_DS</ARBGB>
      <MSGNR>001</MSGNR>
-     <TEXT>Either PDF binary data or Smartform OTF data is mandatory</TEXT>
+     <TEXT>PDF binary data to be signed is mandatory</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>Z_DS</ARBGB>
      <MSGNR>002</MSGNR>
-     <TEXT>Only 1 input must be supplied: PDF binary data or Smartform OTF data</TEXT>
+     <TEXT>&amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
