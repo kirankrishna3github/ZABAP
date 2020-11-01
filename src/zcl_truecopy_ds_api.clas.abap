@@ -405,7 +405,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
     endif.
 
     if it_smartf_otf_data is not initial.
-      rv_num_of_pages = reduce #( init pages = 0   " to calculate the number of pages in the smartform
+      rv_num_of_pages = reduce #( init pages = 0   " to calculate the number of pages in the smartform, cannot use lines( )
                                   for ls in it_smartf_otf_data
                                     where ( tdprintcom = 'EP' )
                                   next pages = pages + 1 ).
