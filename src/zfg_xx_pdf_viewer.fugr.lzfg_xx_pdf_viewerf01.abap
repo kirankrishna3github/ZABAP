@@ -92,6 +92,8 @@ form display_pdf.
       message id sy-msgid type sy-msgty number sy-msgno
         with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
+
+    message |To print: Click on the document and press 'Ctrl + P'| type 'S'.
   endif.
 endform.
 *&---------------------------------------------------------------------*

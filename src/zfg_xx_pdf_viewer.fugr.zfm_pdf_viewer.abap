@@ -10,8 +10,6 @@ function zfm_pdf_viewer.
     gv_pdf = iv_pdf_binary.
   endif.
 
-  message |To print: Click on the document and press Ctrl + P| type 'S'.
-
   if iv_popup = abap_true.
     call screen '0100' starting at 20 1 ending at 160 24.
   else.
