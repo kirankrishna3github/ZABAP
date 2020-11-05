@@ -233,6 +233,7 @@ class ltcl_truecopy_ds_api implementation.
                         iv_pdf_binary = lv_unsigned_pdf
                         iv_api_type = zcl_truecopy_ds_api=>mc_api_type-base64     " for using the base64 api
                         " signed pdf will be displayed by default on the frontend. Can be avoided using iv_display = abap_false
+                        iv_print_dialog = abap_true
                       importing
                         et_message = lt_message ).
 

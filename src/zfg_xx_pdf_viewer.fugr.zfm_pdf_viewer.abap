@@ -4,7 +4,7 @@ function zfm_pdf_viewer.
 *"  IMPORTING
 *"     VALUE(IV_PDF_BINARY) TYPE  XSTRING
 *"     VALUE(IV_POPUP) TYPE  ABAP_BOOL DEFAULT ABAP_FALSE
-*"     VALUE(IV_PRINT) TYPE  ABAP_BOOL DEFAULT ABAP_TRUE
+*"     VALUE(IV_PRINT) TYPE  ABAP_BOOL DEFAULT ABAP_FALSE
 *"----------------------------------------------------------------------
   clear gv_pdf.
   if iv_pdf_binary is not initial.

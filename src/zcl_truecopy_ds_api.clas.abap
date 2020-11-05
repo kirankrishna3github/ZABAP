@@ -32,6 +32,7 @@ public section.
       value(IV_PDF_BINARY) type XSTRING optional
       value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART
       value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
+      value(IV_PRINT_DIALOG) type ABAP_BOOL default ABAP_FALSE
     exporting
       value(ET_MESSAGE) type MTTY_MESSAGE
     returning
@@ -121,7 +122,8 @@ private section.
   methods DISPLAY_PDF
     importing
       value(IV_PDF_BINARY) type XSTRING
-      value(IV_SYSTEM_VIEWER) type ABAP_BOOL default ABAP_FALSE .
+      value(IV_SYSTEM_VIEWER) type ABAP_BOOL default ABAP_FALSE
+      value(IV_PRINT_DIALOG) type ABAP_BOOL default ABAP_FALSE .
 ENDCLASS.
 
 
@@ -315,10 +317,21 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         if sy-subrc <> 0.
           add_message( exporting is_symsg = corresponding #( sy ) ).
         endif.
+
+        if iv_print_dialog = abap_true.
+          /scmtms/cl_ui_dlg_print_pdf=>create_spool_and_print_single(
+            exporting
+              iv_prndst      = conv #( 'LP01' )       " Spool: Output device
+              iv_content     = iv_pdf_binary          " Attachment Folder: Content
+              iv_spool_title = conv #( 'Print PDF' )  " Title of a spool request
+            importing
+              ev_retcode     = data(lv_retcode) ).    " 2 byte integer (signed)
+        endif.
       else.
         call function 'ZFM_PDF_VIEWER'
           exporting
-            iv_pdf_binary = iv_pdf_binary.  " PDF content in binary format
+            iv_pdf_binary = iv_pdf_binary
+            iv_print      = iv_print_dialog.  " PDF content in binary format
       endif.
     endif.
   endmethod.
@@ -579,7 +592,8 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                   if iv_display = abap_true.
                     display_pdf(
                       exporting
-                        iv_pdf_binary = rv_signed_pdf_binary ). " Signed PDF binary
+                        iv_pdf_binary   = rv_signed_pdf_binary
+                        iv_print_dialog = iv_print_dialog ). " Signed PDF binary
                   endif.
                 endif.
               endif.
