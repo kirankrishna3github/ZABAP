@@ -21,6 +21,13 @@
       </RSIMP>
       <RSIMP>
        <PARAMETER>IV_POPUP</PARAMETER>
+       <DEFAULT>ABAP_FALSE</DEFAULT>
+       <OPTIONAL>X</OPTIONAL>
+       <TYP>ABAP_BOOL</TYP>
+      </RSIMP>
+      <RSIMP>
+       <PARAMETER>IV_PRINT</PARAMETER>
+       <DEFAULT>ABAP_TRUE</DEFAULT>
        <OPTIONAL>X</OPTIONAL>
        <TYP>ABAP_BOOL</TYP>
       </RSIMP>
@@ -35,6 +42,11 @@
        <PARAMETER>IV_POPUP</PARAMETER>
        <KIND>P</KIND>
        <STEXT>Display as a popup</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>IV_PRINT</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Print using system print dialog</STEXT>
       </RSFDO>
      </DOCUMENTATION>
     </item>
