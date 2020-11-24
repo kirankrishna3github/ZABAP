@@ -206,6 +206,22 @@ class ltcl_truecopy_ds_api implementation.
                             importing
                               et_message = lt_message ).
 
+    new zcl_email( )->send_email(
+      exporting
+        subject       = conv #( 'Signed PDF Test' )             " Email subject
+        sender        = conv #( sy-uname )                      " Email Sender - Can be user id or email address directly
+        body          = value #( ( line = 'PFA' ) )             " Email Body - table of char255
+        body_obj_type = 'RAW' " Code for document class
+        recipients    = value #( ( recipient = sy-uname ) )     " Email recipients
+        attachments   = value #( ( att_type = 'BIN'
+                                   att_subj = 'Signed.PDF'
+                                   att_solix = cl_bcs_convert=>xstring_to_solix(
+                                                 exporting
+                                                   iv_xstring = lv_signed_pdf )
+                                   att_size = xstrlen( lv_signed_pdf ) ) )        " For multiple attachments
+      importing
+        sent          = data(lv_sent) ).          " Email Sent?
+
     data(lv_failed) =
       cl_abap_unit_assert=>assert_not_initial(
         exporting

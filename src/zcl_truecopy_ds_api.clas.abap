@@ -344,7 +344,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                           or zcl_helper=>is_quality( )
                                           or zcl_helper=>is_sandbox( )
                                         then 'BPUCZXPG'
-                                        else 'prd_apikey'  ).
+                                        else 'BPUCZXPG'  ). " IHDK909301
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
@@ -433,7 +433,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                          or zcl_helper=>is_quality( )
                                          or zcl_helper=>is_sandbox( )
                                        then 'samco_indofil'
-                                       else 'prd_pfxid' ).
+                                       else 'indofil01' ).  " IHDK909278
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
@@ -447,7 +447,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                           or zcl_helper=>is_quality( )
                                           or zcl_helper=>is_sandbox( )
                                         then 'samco'
-                                        else 'prd_pfpwd' ).
+                                        else 'Tc%9pxL7kXcEHc/VlRAHBvZS1H5WhA==' ).  " IHDK909278
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
@@ -657,7 +657,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                     filename  = |{ mv_checksum }.pdf|
                                     signloc   = is_ds_parameters-sign_loc
                                     signannotation = |{ cond #( when is_ds_parameters-approved_by is not initial
-                                                                then |Approved By:| ) }| &&
+                                                                then |Approved By: | ) }| &&
                                                                      |{ is_ds_parameters-approved_by }|
                                     filepwd   = ''
                                     accessid  = ''
@@ -766,7 +766,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                          ( name = 'signloc' value = is_ds_parameters-sign_loc )
                                          ( name = 'signannotation'
                                            value = |{ cond #( when is_ds_parameters-approved_by is not initial
-                                                              then |Approved By:| ) }| &&
+                                                              then |Approved By: | ) }| &&
                                                                    |{ is_ds_parameters-approved_by }| )
                                          ( name = 'timestamp' value = mv_timestamp )
                                          ( name = 'checksum'  value = mv_checksum )
