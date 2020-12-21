@@ -33,6 +33,7 @@ public section.
       value(IV_API_TYPE) type CHAR1 default MC_API_TYPE-MULTIPART
       value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
       value(IV_PRINT_DIALOG) type ABAP_BOOL default ABAP_FALSE
+      value(IV_NO_DS) type ABAP_BOOL default ABAP_FALSE
     exporting
       value(ET_MESSAGE) type MTTY_MESSAGE
     returning
@@ -544,6 +545,22 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           rv_signed_pdf_binary.
 
         constants lc_default_page type c length 1 value '1'.
+
+        " IHDK909611 - XX: S_K: DS: Add provision to print w/o DS: 21.12.2020
+        if iv_no_ds = abap_true.
+          if iv_pdf_binary is not initial.
+            rv_signed_pdf_binary = iv_pdf_binary.
+            if rv_signed_pdf_binary is not initial.
+              if iv_display = abap_true.
+                display_pdf(
+                  exporting
+                    iv_pdf_binary   = rv_signed_pdf_binary
+                    iv_print_dialog = iv_print_dialog ). " Signed PDF binary
+              endif.
+            endif.
+          endif.
+          return.
+        endif.
 
         initialize( ).
 
