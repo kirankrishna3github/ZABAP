@@ -93,6 +93,29 @@ form display_pdf.
         with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
 
+    cl_gui_cfw=>flush(
+      exceptions
+        cntl_system_error = 1 " cntl_system_error
+        cntl_error        = 2 " cntl_error
+        others            = 3 ).
+    if sy-subrc <> 0.
+      message id sy-msgid type sy-msgty number sy-msgno
+        with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    endif.
+
+    if gv_print = abap_true.
+      lo_html_viewer->execwb(
+        exporting
+          cmd_id     = lo_html_viewer->wb_cmdid_print " identifier of the command to execute
+        exceptions
+          cntl_error = 1              " Control Error
+          others     = 2 ).
+      if sy-subrc <> 0.
+        message id sy-msgid type sy-msgty number sy-msgno
+          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+      endif.
+    endif.
+
     message |To print: Click on the document and press 'Ctrl + P'| type 'S'.
   endif.
 endform.

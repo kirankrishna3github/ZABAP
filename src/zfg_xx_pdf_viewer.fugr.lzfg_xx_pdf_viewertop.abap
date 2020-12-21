@@ -4,4 +4,5 @@ function-pool zfg_xx_pdf_viewer.            "MESSAGE-ID ..
 
 data:
   gv_pdf type xstring,
+  gv_print type abap_bool,
   go_html_viewer type ref to cl_gui_html_viewer.
