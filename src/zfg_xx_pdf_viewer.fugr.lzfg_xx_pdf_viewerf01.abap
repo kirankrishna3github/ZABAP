@@ -104,9 +104,9 @@ form display_pdf.
     endif.
 
     if gv_print = abap_true.
+      wait up to 1 seconds.
+
       lo_html_viewer->execwb(
-        exporting
-          cmd_id     = lo_html_viewer->wb_cmdid_print " identifier of the command to execute
         exceptions
           cntl_error = 1              " Control Error
           others     = 2 ).
