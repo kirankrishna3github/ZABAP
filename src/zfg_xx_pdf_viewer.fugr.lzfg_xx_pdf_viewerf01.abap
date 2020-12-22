@@ -123,7 +123,7 @@ form display_pdf.
           with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
       endif.
 
-      if gv_display = abap_true.
+      if gv_display = abap_false.
         lo_html_viewer->free(
           exceptions
             cntl_error        = 1 " CNTL_ERROR
@@ -134,9 +134,18 @@ form display_pdf.
             with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
         endif.
 
-        cl_gui_cfw=>flush( ).
+        cl_gui_cfw=>flush(
+          exceptions
+            cntl_system_error = 1 " cntl_system_error
+            cntl_error        = 2 " cntl_error
+            others            = 3 ).
+        if sy-subrc <> 0.
+          message id sy-msgid type sy-msgty number sy-msgno
+            with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+        endif.
 
-*        leave to screen 0.
+        clear lo_html_viewer.
+        leave to screen 0.
       endif.
     endif.
 
@@ -163,6 +172,16 @@ form handler_ucomm.
         exceptions
           cntl_error        = 1 " CNTL_ERROR
           cntl_system_error = 2 " CNTL_SYSTEM_ERROR
+          others            = 3 ).
+      if sy-subrc <> 0.
+        message id sy-msgid type sy-msgty number sy-msgno
+          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+      endif.
+
+      cl_gui_cfw=>flush(
+        exceptions
+          cntl_system_error = 1 " cntl_system_error
+          cntl_error        = 2 " cntl_error
           others            = 3 ).
       if sy-subrc <> 0.
         message id sy-msgid type sy-msgty number sy-msgno
