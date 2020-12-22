@@ -298,54 +298,56 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
 
   method display_pdf.
-    if iv_pdf_binary is not initial.
-      if iv_system_viewer = abap_true.
-        if iv_display = abap_true.
-          data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
-                                  exporting
-                                    iv_xstring = iv_pdf_binary ).
+    if cl_demo_sap_gui=>check( ).
+      if iv_pdf_binary is not initial.
+        if iv_system_viewer = abap_true.
+          if iv_display = abap_true.
+            data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
+                                    exporting
+                                      iv_xstring = iv_pdf_binary ).
 
-          cl_gui_frontend_services=>show_document(
-            exporting
-              document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
-              mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
-              data_length           = xstrlen( iv_pdf_binary )                  " File Length
-              keep_file             = abap_true                                 " Keep Temporary File
-            importing
-              temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
-            changing
-              document_data         = lt_signed_pdf  " Transfer table
-            exceptions
-              cntl_error            = 1              " Error when calling front-end control or internal error
-              error_no_gui          = 2              " No SAPGUI available (background mode)
-              bad_parameter         = 3              " Invalid input value
-              error_writing_data    = 4              " Error when downloading document content
-              error_starting_viewer = 5              " Cannot launch display application
-              unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
-              not_supported_by_gui  = 7              " Method not supported by client
-              access_denied         = 8              " Operation rejected by front end
-              no_authority          = 9              " Missing authority
-              others                = 10 ).
-          if sy-subrc <> 0.
-            add_message( exporting is_symsg = corresponding #( sy ) ).
+            cl_gui_frontend_services=>show_document(
+              exporting
+                document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
+                mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
+                data_length           = xstrlen( iv_pdf_binary )                  " File Length
+                keep_file             = abap_true                                 " Keep Temporary File
+              importing
+                temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
+              changing
+                document_data         = lt_signed_pdf  " Transfer table
+              exceptions
+                cntl_error            = 1              " Error when calling front-end control or internal error
+                error_no_gui          = 2              " No SAPGUI available (background mode)
+                bad_parameter         = 3              " Invalid input value
+                error_writing_data    = 4              " Error when downloading document content
+                error_starting_viewer = 5              " Cannot launch display application
+                unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
+                not_supported_by_gui  = 7              " Method not supported by client
+                access_denied         = 8              " Operation rejected by front end
+                no_authority          = 9              " Missing authority
+                others                = 10 ).
+            if sy-subrc <> 0.
+              add_message( exporting is_symsg = corresponding #( sy ) ).
+            endif.
           endif.
-        endif.
 
-        if iv_print_dialog = abap_true.
-          /scmtms/cl_ui_dlg_print_pdf=>create_spool_and_print_single(
+          if iv_print_dialog = abap_true.
+            /scmtms/cl_ui_dlg_print_pdf=>create_spool_and_print_single(
+              exporting
+                iv_prndst      = conv #( 'LP01' )       " Spool: Output device
+                iv_content     = iv_pdf_binary          " Attachment Folder: Content
+                iv_spool_title = conv #( 'Print PDF' )  " Title of a spool request
+              importing
+                ev_retcode     = data(lv_retcode) ).    " 2 byte integer (signed)
+          endif.
+        else.
+          call function 'ZFM_PDF_VIEWER'
             exporting
-              iv_prndst      = conv #( 'LP01' )       " Spool: Output device
-              iv_content     = iv_pdf_binary          " Attachment Folder: Content
-              iv_spool_title = conv #( 'Print PDF' )  " Title of a spool request
-            importing
-              ev_retcode     = data(lv_retcode) ).    " 2 byte integer (signed)
+              iv_pdf_binary = iv_pdf_binary
+              iv_display    = iv_display
+              iv_print      = iv_print_dialog.  " PDF content in binary format
         endif.
-      else.
-        call function 'ZFM_PDF_VIEWER'
-          exporting
-            iv_pdf_binary = iv_pdf_binary
-            iv_display    = iv_display
-            iv_print      = iv_print_dialog.  " PDF content in binary format
       endif.
     endif.
   endmethod.
