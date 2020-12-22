@@ -26,6 +26,12 @@
        <TYP>ABAP_BOOL</TYP>
       </RSIMP>
       <RSIMP>
+       <PARAMETER>IV_DISPLAY</PARAMETER>
+       <DEFAULT>ABAP_TRUE</DEFAULT>
+       <OPTIONAL>X</OPTIONAL>
+       <TYP>ABAP_BOOL</TYP>
+      </RSIMP>
+      <RSIMP>
        <PARAMETER>IV_PRINT</PARAMETER>
        <DEFAULT>ABAP_FALSE</DEFAULT>
        <OPTIONAL>X</OPTIONAL>
@@ -42,6 +48,11 @@
        <PARAMETER>IV_POPUP</PARAMETER>
        <KIND>P</KIND>
        <STEXT>Display as a popup</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>IV_DISPLAY</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Display the PDF document</STEXT>
       </RSFDO>
       <RSFDO>
        <PARAMETER>IV_PRINT</PARAMETER>

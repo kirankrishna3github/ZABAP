@@ -50,6 +50,9 @@ public section.
       value(IT_SMARTF_OTF_DATA) type TSFOTF
     returning
       value(RV_PDF_BINARY) type XSTRING .
+  methods GET_MERGED_PDF
+    returning
+      value(RV_MERGED_PDF) type XSTRING .
   protected section.
 private section.
 
@@ -72,6 +75,7 @@ private section.
   data MV_APIKEY type STRING .
   data MV_CHECKSUM type STRING .
   data MT_MESSAGE type STRING_TABLE .
+  data MO_PDF_MERGER type ref to CL_RSPO_PDF_MERGE .
 
   methods GET_MESSAGES
     returning
@@ -123,6 +127,7 @@ private section.
   methods DISPLAY_PDF
     importing
       value(IV_PDF_BINARY) type XSTRING
+      value(IV_DISPLAY) type ABAP_BOOL default ABAP_TRUE
       value(IV_SYSTEM_VIEWER) type ABAP_BOOL default ABAP_FALSE
       value(IV_PRINT_DIALOG) type ABAP_BOOL default ABAP_FALSE .
 ENDCLASS.
@@ -257,6 +262,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method constructor.
     try.
         cleanup( ).
+        try.
+            clear mo_pdf_merger.
+            mo_pdf_merger = new #( ).
+          catch cx_rspo_pdf_merge ##no_handler.
+        endtry.
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
@@ -290,33 +300,35 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method display_pdf.
     if iv_pdf_binary is not initial.
       if iv_system_viewer = abap_true.
-        data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
-                                exporting
-                                  iv_xstring = iv_pdf_binary ).
+        if iv_display = abap_true.
+          data(lt_signed_pdf) = cl_bcs_convert=>xstring_to_solix(
+                                  exporting
+                                    iv_xstring = iv_pdf_binary ).
 
-        cl_gui_frontend_services=>show_document(
-          exporting
-            document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
-            mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
-            data_length           = xstrlen( iv_pdf_binary )                  " File Length
-            keep_file             = abap_true                                 " Keep Temporary File
-          importing
-            temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
-          changing
-            document_data         = lt_signed_pdf  " Transfer table
-          exceptions
-            cntl_error            = 1              " Error when calling front-end control or internal error
-            error_no_gui          = 2              " No SAPGUI available (background mode)
-            bad_parameter         = 3              " Invalid input value
-            error_writing_data    = 4              " Error when downloading document content
-            error_starting_viewer = 5              " Cannot launch display application
-            unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
-            not_supported_by_gui  = 7              " Method not supported by client
-            access_denied         = 8              " Operation rejected by front end
-            no_authority          = 9              " Missing authority
-            others                = 10 ).
-        if sy-subrc <> 0.
-          add_message( exporting is_symsg = corresponding #( sy ) ).
+          cl_gui_frontend_services=>show_document(
+            exporting
+              document_name         = conv #( |{ mv_checksum }.pdf| )           " Default document file name
+              mime_type             = if_rest_media_type=>gc_appl_pdf           " MIME Type
+              data_length           = xstrlen( iv_pdf_binary )                  " File Length
+              keep_file             = abap_true                                 " Keep Temporary File
+            importing
+              temp_file_path        = data(lv_signed_pdf_file_path)             " If KEEP_FILE='X', full path to temporary file
+            changing
+              document_data         = lt_signed_pdf  " Transfer table
+            exceptions
+              cntl_error            = 1              " Error when calling front-end control or internal error
+              error_no_gui          = 2              " No SAPGUI available (background mode)
+              bad_parameter         = 3              " Invalid input value
+              error_writing_data    = 4              " Error when downloading document content
+              error_starting_viewer = 5              " Cannot launch display application
+              unknown_mime_type     = 6              " Front end does not recognize specified MIME typ
+              not_supported_by_gui  = 7              " Method not supported by client
+              access_denied         = 8              " Operation rejected by front end
+              no_authority          = 9              " Missing authority
+              others                = 10 ).
+          if sy-subrc <> 0.
+            add_message( exporting is_symsg = corresponding #( sy ) ).
+          endif.
         endif.
 
         if iv_print_dialog = abap_true.
@@ -332,6 +344,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         call function 'ZFM_PDF_VIEWER'
           exporting
             iv_pdf_binary = iv_pdf_binary
+            iv_display    = iv_display
             iv_print      = iv_print_dialog.  " PDF content in binary format
       endif.
     endif.
@@ -362,6 +375,17 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
+  endmethod.
+
+
+  method get_merged_pdf.
+    clear rv_merged_pdf.
+    if mo_pdf_merger is bound.
+      mo_pdf_merger->merge_documents(
+        importing
+          merged_document = rv_merged_pdf     " Composite document
+          rc              = data(lv_rc) ).    " Return code
+    endif.
   endmethod.
 
 
@@ -550,13 +574,19 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         if iv_no_ds = abap_true.
           if iv_pdf_binary is not initial.
             rv_signed_pdf_binary = iv_pdf_binary.
+
             if rv_signed_pdf_binary is not initial.
-              if iv_display = abap_true.
-                display_pdf(
+              if mo_pdf_merger is bound.
+                mo_pdf_merger->add_document(
                   exporting
-                    iv_pdf_binary   = rv_signed_pdf_binary
-                    iv_print_dialog = iv_print_dialog ). " Signed PDF binary
+                    document = rv_signed_pdf_binary ).
               endif.
+
+              display_pdf(
+                exporting
+                  iv_pdf_binary   = rv_signed_pdf_binary
+                  iv_display      = iv_display
+                  iv_print_dialog = iv_print_dialog ). " Signed PDF binary
             endif.
           endif.
           return.
@@ -606,12 +636,17 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                 endcase.
 
                 if rv_signed_pdf_binary is not initial.
-                  if iv_display = abap_true.
-                    display_pdf(
+                  if mo_pdf_merger is bound.
+                    mo_pdf_merger->add_document(
                       exporting
-                        iv_pdf_binary   = rv_signed_pdf_binary
-                        iv_print_dialog = iv_print_dialog ). " Signed PDF binary
+                        document = rv_signed_pdf_binary ).
                   endif.
+
+                  display_pdf(
+                    exporting
+                      iv_pdf_binary   = rv_signed_pdf_binary
+                      iv_display      = iv_display
+                      iv_print_dialog = iv_print_dialog ). " Signed PDF binary
                 endif.
               endif.
             else.

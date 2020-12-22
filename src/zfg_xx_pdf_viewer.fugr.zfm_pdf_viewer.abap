@@ -4,13 +4,16 @@ function zfm_pdf_viewer.
 *"  IMPORTING
 *"     VALUE(IV_PDF_BINARY) TYPE  XSTRING
 *"     VALUE(IV_POPUP) TYPE  ABAP_BOOL DEFAULT ABAP_FALSE
+*"     VALUE(IV_DISPLAY) TYPE  ABAP_BOOL DEFAULT ABAP_TRUE
 *"     VALUE(IV_PRINT) TYPE  ABAP_BOOL DEFAULT ABAP_FALSE
 *"----------------------------------------------------------------------
   clear:
     gv_pdf,
+    gv_display,
     gv_print.
 
   gv_pdf = iv_pdf_binary.
+  gv_display = iv_display.
   gv_print = iv_print.
 
 *  if iv_print = abap_true.
