@@ -91,6 +91,18 @@ form display_pdf.
         with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
 
+    lo_html_viewer->set_focus(
+      exporting
+        control           = cl_gui_custom_container=>default_screen " Control
+      exceptions
+        cntl_error        = 1       " cntl_error
+        cntl_system_error = 2       " cntl_system_error
+        others            = 3 ).
+    if sy-subrc <> 0.
+      message id sy-msgid type sy-msgty number sy-msgno
+        with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    endif.
+
     cl_gui_cfw=>flush(
       exceptions
         cntl_system_error = 1 " cntl_system_error
@@ -101,57 +113,53 @@ form display_pdf.
         with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
 
-    if gv_print = abap_true.
-      wait up to 1 seconds.
+*    if gv_print = abap_true.
+*      lo_html_viewer->execwb(
+*        exceptions
+*          cntl_error = 1              " Control Error
+*          others     = 2 ).
+*      if sy-subrc <> 0.
+*        message id sy-msgid type sy-msgty number sy-msgno
+*          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+*      endif.
+*
+*      cl_gui_cfw=>flush(
+*        exceptions
+*          cntl_system_error = 1 " cntl_system_error
+*          cntl_error        = 2 " cntl_error
+*          others            = 3 ).
+*      if sy-subrc <> 0.
+*        message id sy-msgid type sy-msgty number sy-msgno
+*          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+*      endif.
+*    endif.
+  endif.
 
-      lo_html_viewer->execwb(
-        exceptions
-          cntl_error = 1              " Control Error
-          others     = 2 ).
-      if sy-subrc <> 0.
-        message id sy-msgid type sy-msgty number sy-msgno
-          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-      endif.
-
-      cl_gui_cfw=>flush(
-        exceptions
-          cntl_system_error = 1 " cntl_system_error
-          cntl_error        = 2 " cntl_error
-          others            = 3 ).
-      if sy-subrc <> 0.
-        message id sy-msgid type sy-msgty number sy-msgno
-          with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-      endif.
-
-      if gv_display = abap_false.
-        lo_html_viewer->free(
-          exceptions
-            cntl_error        = 1 " CNTL_ERROR
-            cntl_system_error = 2 " CNTL_SYSTEM_ERROR
-            others            = 3 ).
-        if sy-subrc <> 0.
-          message id sy-msgid type sy-msgty number sy-msgno
-            with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-        endif.
-
-        cl_gui_cfw=>flush(
-          exceptions
-            cntl_system_error = 1 " cntl_system_error
-            cntl_error        = 2 " cntl_error
-            others            = 3 ).
-        if sy-subrc <> 0.
-          message id sy-msgid type sy-msgty number sy-msgno
-            with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-        endif.
-
-        clear lo_html_viewer.
-        leave to screen 0.
-      endif.
+  if gv_display = abap_true.
+    message |To print: Click on the document and press 'Ctrl + P'| type 'S'.
+  else.
+    lo_html_viewer->free(
+      exceptions
+        cntl_error        = 1 " CNTL_ERROR
+        cntl_system_error = 2 " CNTL_SYSTEM_ERROR
+        others            = 3 ).
+    if sy-subrc <> 0.
+      message id sy-msgid type sy-msgty number sy-msgno
+        with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
 
-    if gv_display = abap_true.
-      message |To print: Click on the document and press 'Ctrl + P'| type 'S'.
+    cl_gui_cfw=>flush(
+      exceptions
+        cntl_system_error = 1 " cntl_system_error
+        cntl_error        = 2 " cntl_error
+        others            = 3 ).
+    if sy-subrc <> 0.
+      message id sy-msgid type sy-msgty number sy-msgno
+        with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
+
+    clear lo_html_viewer.
+    leave to screen 0.
   endif.
 endform.
 *&---------------------------------------------------------------------*
