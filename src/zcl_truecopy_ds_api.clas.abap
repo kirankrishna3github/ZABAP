@@ -50,9 +50,6 @@ public section.
       value(IT_SMARTF_OTF_DATA) type TSFOTF
     returning
       value(RV_PDF_BINARY) type XSTRING .
-  methods GET_MERGED_PDF
-    returning
-      value(RV_MERGED_PDF) type XSTRING .
   protected section.
 private section.
 
@@ -75,7 +72,6 @@ private section.
   data MV_APIKEY type STRING .
   data MV_CHECKSUM type STRING .
   data MT_MESSAGE type STRING_TABLE .
-  data MO_PDF_MERGER type ref to CL_RSPO_PDF_MERGE .
 
   methods GET_MESSAGES
     returning
@@ -262,11 +258,6 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   method constructor.
     try.
         cleanup( ).
-        try.
-            clear mo_pdf_merger.
-            mo_pdf_merger = new #( ).
-          catch cx_rspo_pdf_merge ##no_handler.
-        endtry.
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
@@ -377,17 +368,6 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
       catch cx_root into data(lox_root).
         add_message( exporting iox_exception = lox_root ).
     endtry.
-  endmethod.
-
-
-  method get_merged_pdf.
-    clear rv_merged_pdf.
-    if mo_pdf_merger is bound.
-      mo_pdf_merger->merge_documents(
-        importing
-          merged_document = rv_merged_pdf     " Composite document
-          rc              = data(lv_rc) ).    " Return code
-    endif.
   endmethod.
 
 
@@ -578,12 +558,6 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
             rv_signed_pdf_binary = iv_pdf_binary.
 
             if rv_signed_pdf_binary is not initial.
-              if mo_pdf_merger is bound.
-                mo_pdf_merger->add_document(
-                  exporting
-                    document = rv_signed_pdf_binary ).
-              endif.
-
               display_pdf(
                 exporting
                   iv_pdf_binary   = rv_signed_pdf_binary
@@ -638,12 +612,6 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                 endcase.
 
                 if rv_signed_pdf_binary is not initial.
-                  if mo_pdf_merger is bound.
-                    mo_pdf_merger->add_document(
-                      exporting
-                        document = rv_signed_pdf_binary ).
-                  endif.
-
                   display_pdf(
                     exporting
                       iv_pdf_binary   = rv_signed_pdf_binary
