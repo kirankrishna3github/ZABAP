@@ -570,7 +570,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
           et_message,
           rv_signed_pdf_binary.
 
-        constants lc_default_page type c length 1 value '1'.
+        constants lc_default_page type c length 1 value ''.
 
         " IHDK909611 - XX: S_K: DS: Add provision to print w/o DS: 21.12.2020
         if iv_no_ds = abap_true.
