@@ -381,7 +381,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
         clear rv_descriptor.
 
         data(lv_len) = xstrlen( iv_pdf_binary_data ).
-        lv_len = lv_len - ( '0.05' * lv_len ).
+        lv_len = lv_len - ( '0.1' * lv_len ).
         rv_descriptor = cl_nwbc_utility=>to_md5(
                           exporting
                             iv_value = conv string( iv_pdf_binary_data+0(lv_len) ) ).
