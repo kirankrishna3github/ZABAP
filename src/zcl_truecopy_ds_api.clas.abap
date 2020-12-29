@@ -814,7 +814,9 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                                                    |{ is_ds_parameters-approved_by }| )
                                          ( name = 'timestamp' value = mv_timestamp )
                                          ( name = 'checksum'  value = mv_checksum )
-                                         ( name = 'descriptor' value = '' )
+                                         ( name = 'descriptor' value = get_descriptor(
+                                                                         exporting
+                                                                           iv_pdf_binary_data = iv_pdf_binary_data ) )
                                          ( name = 'accessid' value = '' ) ) ).
 
                 " set the unsigned pdf binary
