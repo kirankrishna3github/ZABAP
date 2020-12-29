@@ -50,6 +50,11 @@ public section.
       value(IT_SMARTF_OTF_DATA) type TSFOTF
     returning
       value(RV_PDF_BINARY) type XSTRING .
+  methods GET_DESCRIPTOR
+    importing
+      value(IV_PDF_BINARY_DATA) type XSTRING
+    returning
+      value(RV_DESCRIPTOR) type STRING .
   protected section.
 private section.
 
@@ -371,6 +376,21 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
   endmethod.
 
 
+  method get_descriptor.
+    try.
+        clear rv_descriptor.
+
+        data(lv_len) = xstrlen( iv_pdf_binary_data ).
+        lv_len = lv_len - ( '0.05' * lv_len ).
+        rv_descriptor = cl_nwbc_utility=>to_md5(
+                          exporting
+                            iv_value = conv string( iv_pdf_binary_data+0(lv_len) ) ).
+      catch cx_root into data(lox_root).
+        add_message( exporting iox_exception = lox_root ).
+    endtry.
+  endmethod.
+
+
   method get_messages.
     try.
         clear rt_message.
@@ -529,19 +549,17 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
   method otf_to_pdf.
     if it_smartf_otf_data is not initial.
-      do 3 times.
-        try.
-            cl_dpr_pdf_conversion_service=>convert_otf_2_pdf(
-              exporting
-                it_otf_data      = it_smartf_otf_data         " Data in OTF Form
-              importing
-                et_pdf_data      = data(lt_pdf)               " Data in PDF Format (Table)
-                ev_pdf_data      = rv_pdf_binary              " Data in PDF Format (XSTRING)
-                ev_pdf_data_size = data(lv_pdf_size) ).       " Size of PDF Data
-          catch cx_dpr_pdf_conversion_error into data(lox_pdf_conv_error). " Development Projects: Error When Converting From PDF Data
-            " Error handling
-        endtry.
-      enddo.
+      try.
+          cl_dpr_pdf_conversion_service=>convert_otf_2_pdf(
+            exporting
+              it_otf_data      = it_smartf_otf_data         " Data in OTF Form
+            importing
+              et_pdf_data      = data(lt_pdf)               " Data in PDF Format (Table)
+              ev_pdf_data      = rv_pdf_binary              " Data in PDF Format (XSTRING)
+              ev_pdf_data_size = data(lv_pdf_size) ).       " Size of PDF Data
+        catch cx_dpr_pdf_conversion_error into data(lox_pdf_conv_error). " Development Projects: Error When Converting From PDF Data
+          " Error handling
+      endtry.
     endif.
   endmethod.
 
@@ -686,9 +704,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                                                      |{ is_ds_parameters-approved_by }|
                                     filepwd    = ''
                                     accessid   = ''
-                                    descriptor = cl_nwbc_utility=>to_md5(
-                                                   exporting
-                                                     iv_value = conv string( iv_pdf_binary_data ) )
+                                    descriptor = get_descriptor( exporting iv_pdf_binary_data = iv_pdf_binary_data )
                                     contents   = cl_http_utility=>encode_x_base64(
                                                   exporting
                                                     unencoded = iv_pdf_binary_data ) ).
