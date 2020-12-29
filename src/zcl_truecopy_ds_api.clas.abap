@@ -668,6 +668,7 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                   signannotation type string,
                   filepwd        type string,
                   accessid       type string,
+                  descriptor     type string,
                   contents       type string,
                 end of ls_request.
 
@@ -681,9 +682,12 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                     signannotation = |{ cond #( when is_ds_parameters-approved_by is not initial
                                                                 then |Approved By: | ) }| &&
                                                                      |{ is_ds_parameters-approved_by }|
-                                    filepwd   = ''
-                                    accessid  = ''
-                                    contents  = cl_http_utility=>encode_x_base64(
+                                    filepwd    = ''
+                                    accessid   = ''
+                                    descriptor = cl_nwbc_utility=>to_md5(
+                                                   exporting
+                                                     iv_value = conv string( iv_pdf_binary_data ) )
+                                    contents   = cl_http_utility=>encode_x_base64(
                                                   exporting
                                                     unencoded = iv_pdf_binary_data ) ).
 
