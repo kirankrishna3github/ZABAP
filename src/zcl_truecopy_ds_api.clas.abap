@@ -529,17 +529,19 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
 
   method otf_to_pdf.
     if it_smartf_otf_data is not initial.
-      try.
-          cl_dpr_pdf_conversion_service=>convert_otf_2_pdf(
-            exporting
-              it_otf_data      = it_smartf_otf_data         " Data in OTF Form
-            importing
-              et_pdf_data      = data(lt_pdf)               " Data in PDF Format (Table)
-              ev_pdf_data      = rv_pdf_binary              " Data in PDF Format (XSTRING)
-              ev_pdf_data_size = data(lv_pdf_size) ).       " Size of PDF Data
-        catch cx_dpr_pdf_conversion_error into data(lox_pdf_conv_error). " Development Projects: Error When Converting From PDF Data
-          " Error handling
-      endtry.
+      do 3 times.
+        try.
+            cl_dpr_pdf_conversion_service=>convert_otf_2_pdf(
+              exporting
+                it_otf_data      = it_smartf_otf_data         " Data in OTF Form
+              importing
+                et_pdf_data      = data(lt_pdf)               " Data in PDF Format (Table)
+                ev_pdf_data      = rv_pdf_binary              " Data in PDF Format (XSTRING)
+                ev_pdf_data_size = data(lv_pdf_size) ).       " Size of PDF Data
+          catch cx_dpr_pdf_conversion_error into data(lox_pdf_conv_error). " Development Projects: Error When Converting From PDF Data
+            " Error handling
+        endtry.
+      enddo.
     endif.
   endmethod.
 
