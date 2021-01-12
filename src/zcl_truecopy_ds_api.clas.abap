@@ -699,9 +699,10 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                     cs        = mv_checksum
                                     filename  = |{ mv_checksum }.pdf|
                                     signloc   = is_ds_parameters-sign_loc
-                                    signannotation = |{ cond #( when is_ds_parameters-approved_by is not initial
-                                                                then |Approved By: | ) }| &&
-                                                                     |{ is_ds_parameters-approved_by }|
+                                    " IHDK909900 - XX: S_K: DS: No annotation as per Sunil Sir: 12.1.21
+*                                    signannotation = |{ cond #( when is_ds_parameters-approved_by is not initial
+*                                                                then |Approved By: | ) }| &&
+*                                                                     |{ is_ds_parameters-approved_by }|
                                     filepwd    = ''
                                     accessid   = ''
                                     descriptor = get_descriptor( exporting iv_pdf_binary_data = iv_pdf_binary_data )
@@ -808,10 +809,11 @@ CLASS ZCL_TRUECOPY_DS_API IMPLEMENTATION.
                                          ( name = 'pfxpwd' value = mv_pfxpwd )
                                          ( name = 'filepwd' value = '' )
                                          ( name = 'signloc' value = is_ds_parameters-sign_loc )
-                                         ( name = 'signannotation'
-                                           value = |{ cond #( when is_ds_parameters-approved_by is not initial
-                                                              then |Approved By: | ) }| &&
-                                                                   |{ is_ds_parameters-approved_by }| )
+                                         " IHDK909900 - XX: S_K: DS: No annotation as per Sunil Sir: 12.1.21
+*                                         ( name = 'signannotation'
+*                                           value = |{ cond #( when is_ds_parameters-approved_by is not initial
+*                                                              then |Approved By: | ) }| &&
+*                                                                   |{ is_ds_parameters-approved_by }| )
                                          ( name = 'timestamp' value = mv_timestamp )
                                          ( name = 'checksum'  value = mv_checksum )
                                          ( name = 'descriptor' value = get_descriptor(
