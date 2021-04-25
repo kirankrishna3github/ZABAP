@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_TRAN" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <TSTC>
+    <TCODE>Z001</TCODE>
+    <PGMNA>SAPLZ_FG_ADDR_MAINT</PGMNA>
+    <CINFO>CA==</CINFO>
+   </TSTC>
+   <TSTCC>
+    <TCODE>Z001</TCODE>
+    <S_WEBGUI>1</S_WEBGUI>
+    <S_WIN32>X</S_WIN32>
+    <S_PLATIN>X</S_PLATIN>
+   </TSTCC>
+   <TSTCT>
+    <SPRSL>E</SPRSL>
+    <TCODE>Z001</TCODE>
+    <TTEXT>Standalone Address Maintenance</TTEXT>
+   </TSTCT>
+   <TSTCP>
+    <TCODE>Z001</TCODE>
+    <PARAM>\PROGRAM=SAPLZ_FG_ADDR_MAINT\CLASS=LCL_MAIN\METHOD=START</PARAM>
+   </TSTCP>
+  </asx:values>
+ </asx:abap>
+</abapGit>
