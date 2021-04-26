@@ -15,6 +15,10 @@ parameters:
   r_delete radiobutton group act modif id act.
 selection-screen end of block act.
 
+selection-screen begin of block grp with frame title text-grp.
+parameters p_addgrp type adrc-addr_group modif id grp.
+selection-screen end of block grp.
+
 selection-screen begin of block fil with frame title text-fil.
 parameters p_file type string modif id fil.
 selection-screen end of block fil.

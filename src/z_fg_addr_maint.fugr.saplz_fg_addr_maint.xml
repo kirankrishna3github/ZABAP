@@ -41,6 +41,12 @@
     </item>
     <item>
      <ID>I</ID>
+     <KEY>GRP</KEY>
+     <ENTRY>Address Group Specification</ENTRY>
+     <LENGTH>54</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
      <KEY>OPT</KEY>
      <ENTRY>Maintenance Mode</ENTRY>
      <LENGTH>26</LENGTH>
@@ -50,6 +56,13 @@
      <KEY>UPD</KEY>
      <ENTRY>Address Selection(Update)</ENTRY>
      <LENGTH>27</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_ADDGRP</KEY>
+     <ENTRY>.</ENTRY>
+     <LENGTH>21</LENGTH>
+     <SPLIT>D</SPLIT>
     </item>
     <item>
      <ID>S</ID>

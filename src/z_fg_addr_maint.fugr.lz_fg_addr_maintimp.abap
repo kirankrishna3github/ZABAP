@@ -57,8 +57,16 @@ class lcl_app implementation.
             screen-active = '0'.
           endif.
         endif.
+        if r_update = abap_true or r_delete = abap_true.
+          if screen-group1 = 'GRP'.
+            screen-active = '0'.
+          endif.
+        endif.
       endif.
       if r_mass = abap_true.
+        if screen-group1 = 'GRP'.
+          screen-active = '0'.
+        endif.
         if screen-group1 = 'UPD'.
           screen-active = '0'.
         endif.
@@ -108,6 +116,10 @@ class lcl_app implementation.
     " check mandatory inputs before execution
     if sscrfields-ucomm = 'CRET'.
       if r_single = abap_true.
+        if r_create = abap_true and p_addgrp is initial.
+          set cursor field 'P_ADDGRP'.
+          message e055(00).
+        endif.
         if r_update = abap_true and p_update is initial.
           set cursor field 'P_UPDATE'.
           message e055(00).

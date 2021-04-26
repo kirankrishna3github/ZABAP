@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_CLAS" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <VSEOCLASS>
+    <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+    <LANGU>E</LANGU>
+    <DESCRIPT>Standalone Address Maintenance</DESCRIPT>
+    <STATE>1</STATE>
+    <CLSCCINCL>X</CLSCCINCL>
+    <FIXPT>X</FIXPT>
+    <UNICODE>X</UNICODE>
+   </VSEOCLASS>
+   <DESCRIPTIONS>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>ADD_REFERENCE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Add an address reference(ADRV) as per TSADRV specification</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>BLOCK_ADDRESS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Set the blocking indicator XPCPT = &apos;X&apos; for an address</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>CREATE_SINGLE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Insert single address data -- returns address number</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>DELETE_REFERENCE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Delete an address reference from ADRV</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>DELETE_SINGLE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Delete single address number</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>LOCK_ADDRESS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Enqueue an address for maintenance</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>MAINTAIN_VIA_DIALOG</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Insert/Create &amp; Change/Update single address data via dialog</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>READ_SINGLE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Select/fetch address data for a single address</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>UNBLOCK_ADDRESS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Set the blocking indicator XPCPT = &apos; &apos; for an address</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>UNLOCK_ADDRESS</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Dequeue an address for maintenance</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>UPDATE_SINGLE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Change address data for single address number</DESCRIPT>
+    </SEOCOMPOTX>
+   </DESCRIPTIONS>
+  </asx:values>
+ </asx:abap>
+</abapGit>
