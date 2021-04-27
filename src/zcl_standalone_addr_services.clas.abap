@@ -9,7 +9,8 @@ public section.
   class-methods READ_SINGLE .
   class-methods UPDATE_SINGLE .
   class-methods DELETE_SINGLE .
-  class-methods MAINTAIN_VIA_DIALOG .
+  class-methods MAINTAIN_VIA_POPUP_DIALOG .
+  class-methods MAINTAIN_VIA_FULLSCREEN_DIALOG .
   class-methods ADD_REFERENCE .
   class-methods BLOCK_ADDRESS .
   class-methods DELETE_REFERENCE .
@@ -19,6 +20,7 @@ private section.
 
   class-methods LOCK_ADDRESS .
   class-methods UNLOCK_ADDRESS .
+  class-methods GET_ADDRESS_HANDLE .
 ENDCLASS.
 
 
@@ -46,11 +48,19 @@ CLASS ZCL_STANDALONE_ADDR_SERVICES IMPLEMENTATION.
   endmethod.
 
 
+  method GET_ADDRESS_HANDLE.
+  endmethod.
+
+
   method LOCK_ADDRESS.
   endmethod.
 
 
-  method MAINTAIN_VIA_DIALOG.
+  method MAINTAIN_VIA_FULLSCREEN_DIALOG.
+  endmethod.
+
+
+  method MAINTAIN_VIA_POPUP_DIALOG.
   endmethod.
 
 
