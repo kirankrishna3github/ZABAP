@@ -126,7 +126,7 @@ CLASS ZCL_STANDALONE_ADDR_SERVICES IMPLEMENTATION.
               clear ls_addr_error.
             endloop.
           endif.
-          addr_memory_clear.
+          addr_memory_clear. " or addr_memory_clear_single '' lv_addr_handle.
           return.
         else.
           clear lv_rc_addr_num_get.
@@ -149,35 +149,17 @@ CLASS ZCL_STANDALONE_ADDR_SERVICES IMPLEMENTATION.
               others                   = 4.
           if sy-subrc <> 0 or rv_addr_number is initial or lv_rc_addr_num_get is not initial.
             add_message.
-            addr_memory_clear.
+            addr_memory_clear.  " or addr_memory_clear_single '' lv_addr_handle.
             return.
           else.
             if rv_addr_number is not initial.
-              call function 'ADDR_SINGLE_SAVE'
-                exporting
-                  address_number         = rv_addr_number " Address Number
-                exceptions
-                  address_not_exist      = 1              " Address Not in Local Memory
-                  person_not_exist       = 2              " Person not found
-                  address_number_missing = 3              " Missing Address Number for New Address
-                  reference_missing      = 4              " Missing Reference
-                  internal_error         = 5              " Serious internal error (MESSAGE A...)
-                  database_error         = 6              " Error when Writing to the Database (Dialog)
-                  parameter_error        = 7              " Invalid Parameter Value (for Example, Blank Number)
-                  others                 = 8.
-              if sy-subrc <> 0.
-                add_message.
-                addr_memory_clear.
-                return.
-              else.
-                commit work.
-              endif.
+              addr_memory_save_single rv_addr_number. " or addr_memory_save.
             endif.
           endif.
         endif.
       when others.
         add_message.
-        addr_memory_clear.
+        addr_memory_clear.  " or addr_memory_clear_single '' lv_addr_handle.
         return.
     endcase.
 
