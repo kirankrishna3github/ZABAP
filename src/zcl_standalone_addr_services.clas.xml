@@ -28,7 +28,7 @@
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
      <CMPNAME>CREATE_SINGLE</CMPNAME>
      <LANGU>E</LANGU>
-     <DESCRIPT>Insert single address data -- returns address number</DESCRIPT>
+     <DESCRIPT>Insert single address data -- returns address number - API</DESCRIPT>
     </SEOCOMPOTX>
     <SEOCOMPOTX>
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
@@ -40,7 +40,7 @@
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
      <CMPNAME>DELETE_SINGLE</CMPNAME>
      <LANGU>E</LANGU>
-     <DESCRIPT>Delete single address number</DESCRIPT>
+     <DESCRIPT>Delete single address number - API</DESCRIPT>
     </SEOCOMPOTX>
     <SEOCOMPOTX>
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
@@ -68,9 +68,21 @@
     </SEOCOMPOTX>
     <SEOCOMPOTX>
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>MC_DEFAULT_APPL_FIELD</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Application table address where-used list logical field name</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>MC_DEFAULT_APPL_TABLE</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Application table logical name (address management)</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
      <CMPNAME>READ_SINGLE</CMPNAME>
      <LANGU>E</LANGU>
-     <DESCRIPT>Select/fetch address data for a single address</DESCRIPT>
+     <DESCRIPT>Select/fetch address data for a single address - API</DESCRIPT>
     </SEOCOMPOTX>
     <SEOCOMPOTX>
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
@@ -88,7 +100,7 @@
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
      <CMPNAME>UPDATE_SINGLE</CMPNAME>
      <LANGU>E</LANGU>
-     <DESCRIPT>Change address data for single address number</DESCRIPT>
+     <DESCRIPT>Change address data for single address number - API</DESCRIPT>
     </SEOCOMPOTX>
    </DESCRIPTIONS>
   </asx:values>

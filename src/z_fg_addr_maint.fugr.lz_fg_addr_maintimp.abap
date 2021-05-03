@@ -103,7 +103,7 @@ class lcl_app implementation.
     " Prevent users from specifying multiple address number
     " when the processing mode is "single deletion"
     " This is a workaround for disabling the extensions button
-    if sscrfields-ucomm = '%017' and r_single = abap_true and r_delete = abap_true.
+    if sscrfields-ucomm = '%020' and r_single = abap_true and r_delete = abap_true.
       set cursor field 'S_DELETE-LOW'.
       message 'Only single address specification allowed' type 'E'.
     endif.
