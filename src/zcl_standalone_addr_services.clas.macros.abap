@@ -2,11 +2,11 @@
 *"* in the implementation part of the class
 
 define add_message.
-  clear lv_message.
+  clear mv_message.
   message id sy-msgid type sy-msgty number sy-msgno
-    with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 into lv_message.
+    with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 into mv_message.
 
-  append conv #( lv_message ) to et_message.
+  append mv_message to et_message.
 end-of-definition.
 
 define addr_memory_clear.
