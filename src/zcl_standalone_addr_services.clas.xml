@@ -86,6 +86,12 @@
     </SEOCOMPOTX>
     <SEOCOMPOTX>
      <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
+     <CMPNAME>READ_REFERENCES</CMPNAME>
+     <LANGU>E</LANGU>
+     <DESCRIPT>Read all references/usages for an address from ADRV</DESCRIPT>
+    </SEOCOMPOTX>
+    <SEOCOMPOTX>
+     <CLSNAME>ZCL_STANDALONE_ADDR_SERVICES</CLSNAME>
      <CMPNAME>READ_SINGLE</CMPNAME>
      <LANGU>E</LANGU>
      <DESCRIPT>Select/fetch address data for a single address - API</DESCRIPT>

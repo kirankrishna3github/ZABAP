@@ -57,7 +57,8 @@ class lcl_app implementation.
             screen-active = '0'.
           endif.
         endif.
-        if r_update = abap_true or r_delete = abap_true.
+        if ( r_update = abap_true or r_delete = abap_true )
+          or r_mass = abap_true.
           if screen-group1 = 'GRP'.
             screen-active = '0'.
           endif.
@@ -153,50 +154,20 @@ class lcl_app implementation.
   method download_file_format.
     " build and download the excel file format for mass address creation & update
     " based on the action selected by the user
-    data:
-      lt_create_format type standard table of addr1_data,
+    zcl_helper=>itab_to_excel(
+      exporting
+        it_itab = value addr1_val_t( ( ) )          " Single internal table to be converted
+        iv_file_path =
+          zcl_helper=>file_save_dialog(   " Filepath on frontend or app server to download to
+            exporting
+              iv_file_filter       = cl_gui_frontend_services=>filetype_excel
+              iv_default_file_name = conv #( |standalone_address_| &&
+                                             |{ cond #( when r_create = abap_true
+                                                        then 'create'
+                                                        when r_update = abap_true
+                                                        then 'update' ) }_| &&
+                                             |file_format.xlsx| ) ) ).
 
-      begin of ls_update_format,
-        addrnumber type adrc-addrnumber.
-        include type addr1_data.
-    data:
-    end of ls_update_format,
-    lt_update_format like standard table of ls_update_format.
-
-    append initial line to lt_create_format.
-    append initial line to lt_update_format.
-
-    field-symbols <lt_file_format> type standard table.
-
-    unassign <lt_file_format>.
-
-    " cond #( ==> does not work because the '#' always uses the type
-    " of the result of the first 'when'. The values of the subsequent
-    " when's are either trucated or converted to the type of the result
-    " of the first when which may give unexpected results
-    case abap_true.
-      when r_create.
-        assign lt_create_format to <lt_file_format>.
-      when r_update.
-        assign lt_update_format to <lt_file_format>.
-      when others.
-    endcase.
-
-    if <lt_file_format> is assigned.
-      zcl_helper=>itab_to_excel(
-        exporting
-          it_itab = <lt_file_format>        " Single internal table to be converted
-          iv_file_path =
-            zcl_helper=>file_save_dialog(   " Filepath on frontend or app server to download to
-              exporting
-                iv_file_filter       = cl_gui_frontend_services=>filetype_excel
-                iv_default_file_name = conv #( |standalone_address_| &&
-                                               |{ cond #( when r_create = abap_true
-                                                          then 'create'
-                                                          when r_update = abap_true
-                                                          then 'update' ) }_| &&
-                                               |file_format.xlsx| ) ) ).
-    endif.
   endmethod.
 
   method process.

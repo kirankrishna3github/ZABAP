@@ -76,6 +76,13 @@ define addr_memory_save_single.
       others                 = 8.
   if sy-subrc <> 0.
     add_message.
+
+    if &2 = abap_true.
+      unlock_address(
+        exporting
+          iv_addr_number = &1 ).
+    endif.
+
     addr_memory_clear.
     return.
   else.

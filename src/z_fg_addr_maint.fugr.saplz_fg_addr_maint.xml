@@ -47,6 +47,54 @@
     </item>
     <item>
      <ID>I</ID>
+     <KEY>N00</KEY>
+     <ENTRY>@5G@ Note:</ENTRY>
+     <LENGTH>132</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>N01</KEY>
+     <ENTRY>@MA@ Download File Format using the</ENTRY>
+     <LENGTH>132</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>N02</KEY>
+     <ENTRY>@MA@ Do NOT alter the column sequence/names; Do NOT delete headers</ENTRY>
+     <LENGTH>132</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>N03</KEY>
+     <ENTRY>@MA@ For address creation keep the ADDRNUMBER column empty.</ENTRY>
+     <LENGTH>118</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>N04</KEY>
+     <ENTRY>@MA@ For address creation providing the ADDR_GROUP is mandatory(Last Column).</ENTRY>
+     <LENGTH>118</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>N05</KEY>
+     <ENTRY>@MA@ For address update providing the ADDRNUMBER is mandatory.</ENTRY>
+     <LENGTH>114</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>N06</KEY>
+     <ENTRY>@MA@ Only fill the columns that are relevant to your use case.</ENTRY>
+     <LENGTH>118</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
+     <KEY>N07</KEY>
+     <ENTRY>@J2@ button on the application toolbar.</ENTRY>
+     <LENGTH>80</LENGTH>
+    </item>
+    <item>
+     <ID>I</ID>
      <KEY>OPT</KEY>
      <ENTRY>Maintenance Mode</ENTRY>
      <LENGTH>26</LENGTH>

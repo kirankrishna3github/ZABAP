@@ -21,6 +21,37 @@ selection-screen end of block grp.
 
 selection-screen begin of block fil with frame title text-fil.
 parameters p_file type string modif id fil.
+
+selection-screen skip.
+
+selection-screen: begin of line,
+  comment 1(79) text-n00 modif id fil,
+end of line.
+
+selection-screen: begin of line,
+  comment 1(35) text-n01 modif id fil,
+  comment 36(79) text-n07 modif id fil,
+end of line.
+
+selection-screen: begin of line,
+  comment 1(79) text-n02 modif id fil,
+end of line.
+
+selection-screen: begin of line,
+  comment 1(79) text-n03 modif id fil,
+end of line.
+
+selection-screen: begin of line,
+  comment 1(79) text-n04 modif id fil,
+end of line.
+
+selection-screen: begin of line,
+  comment 1(79) text-n05 modif id fil,
+end of line.
+
+selection-screen: begin of line,
+  comment 1(79) text-n06 modif id fil,
+end of line.
 selection-screen end of block fil.
 
 selection-screen begin of block upd with frame title text-upd.
